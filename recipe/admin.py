@@ -6,6 +6,7 @@ from .models import *
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ['id', 'title', 'user', 'description', 'difficulty_level', 'visibility']
     search_fields = ['description', 'ingredient']
+    list_display_links = ['title', 'user']
 
 @admin.register(RecipeCollection)
 class RecipeCollection(admin.ModelAdmin):

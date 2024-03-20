@@ -24,7 +24,7 @@ class Recipe(models.Model):
 
     visibility = models.CharField(max_length=7, choices=VISIBILITY_CHOICES)
     difficulty_level = models.CharField(max_length=7,choices=DIFFICULTY_LEVEL_CHOICES)
-    recipe_image = models.ImageField(upload_to='recipe-images', blank=True)
+    recipe_image = models.ImageField(upload_to='recipe-images', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateField(auto_now=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import path
+from django.urls import include, path
 
 admin.site.site_title = "Recipe Management System Admin"
 admin.site.site_header = "Recipe Management System Adminstration"
@@ -25,6 +25,8 @@ admin.site.index_title = "Recipe Management System administration"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/', include('accounts.urls')),
+    path('api/', include('recipe.urls')),
 ]
 
 if settings.DEBUG:
