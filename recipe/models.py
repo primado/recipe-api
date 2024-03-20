@@ -27,7 +27,7 @@ class Recipe(models.Model):
     recipe_image = models.ImageField(upload_to='recipe-images', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateField(auto_now=True)
-    user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
@@ -43,8 +43,8 @@ class Recipe(models.Model):
 class RecipeCollection(models.Model):
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255)
-    user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    collection_id = models.ManyToManyField(Recipe, through="RecipeCollectionRecipe", related_name='collections')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    collection = models.ManyToManyField(Recipe, through="RecipeCollectionRecipe", related_name='collections')
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
@@ -60,13 +60,13 @@ class RecipeCollection(models.Model):
 
 
 class RecipeCollectionRecipe(models.Model):
-    recipe_id = models.ForeignKey(Recipe,  on_delete=models.CASCADE)
-    collection_id = models.ForeignKey(RecipeCollection, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe,  on_delete=models.CASCADE)
+    collection = models.ForeignKey(RecipeCollection, on_delete=models.CASCADE)
 
 class Comment(models.Model):
     text = models.TextField()
-    recipe_id = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.TimeField()
 
     def __str__(self):
@@ -80,10 +80,18 @@ class Comment(models.Model):
         ordering = ['-created_at']
 
 class Rating(models.Model):
-    recipe_id = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    user_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    upvote = models.BooleanField(default=False)
-    downvote = models.BooleanField(default=False)
+    UPVOTE = 'upvote'
+    DOWNVOTE = 'downvote'
+    VOTE_CHOICE = [
+        (UPVOTE, "Upvote"),
+        (DOWNVOTE, "Downvote")
+    ]
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    vote_type = models.CharField(max_length=10, choices=VOTE_CHOICE)
+
+    class Meta:
+        unique_together = [['user_id', 'recipe_id']]
 
 
 class Tag(models.Model):
