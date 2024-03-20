@@ -6,4 +6,9 @@ from . views import *
 router = DefaultRouter()
 router.register(r'recipe', RecipeView)
 
-urlpatterns = router.urls
+
+urlpatterns = [
+    path('feed/', RecipeFeedView.as_view(), name="feed")
+]
+
+urlpatterns += router.urls

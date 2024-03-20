@@ -2,7 +2,9 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from .serializers import *
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 # Create your views here.
@@ -14,6 +16,8 @@ class RecipeView(ModelViewSet):
 
 
     def get_object(self, recipe_id, user):
+        recipe_id =self.kwargs.get('pk')
+        user = self.request.user
         try: 
             return self.queryset.get(id=recipe_id, user=user)
         except Recipe.DoesNotExist:
@@ -84,4 +88,22 @@ class RecipeView(ModelViewSet):
         
         recipe_instance.delete()
         return Response({"messsage": 'Recipe deleted'}, status=status.HTTP_204_NO_CONTENT)
+    
+
+class RecipeFeedView(APIView):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
+    permission_classes = [IsAuthenticated]
+
+
+
+    def get(self, request):
+        visibility = 'public'
+        queryset = self.queryset.filter(visibility=visibility)
+        if not queryset.exists():
+            return Response({'message': 'There are no public recipies'}, status=status.HTTP_400_BAD_REQUEST)
         
+        serializer = self.serializer_class(queryset, many=True)
+        return Response({'message': 'Public recipes', 'data': serializer.data}, status=status.HTTP_200_OK )
+        
+    
