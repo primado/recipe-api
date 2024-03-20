@@ -1,3 +1,9 @@
 recipeEnv/
 .env
 db.sqlite3
+accounts/migrations/__pycache__/
+accounts/__pycache__/
+
+base/__pycache__/
+recipe/__pycache__/
+recipe/migrations/__pycache__/
