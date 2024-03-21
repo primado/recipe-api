@@ -5,6 +5,7 @@ from . views import *
 
 router = DefaultRouter()
 router.register(r'recipe', RecipeView)
+router.register(r'recipe-collection', RecipeCollectionView)
 
 
 urlpatterns = [

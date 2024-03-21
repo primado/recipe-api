@@ -16,4 +16,6 @@ class UpdateCustomUserSerializer(serializers.ModelSerializer):
     class Meta: 
         model = CustomUser
         fields = ('id', 'username', 'bio', 'headline', 'instagram', 'facebook', 'website')
-        
+
+
+

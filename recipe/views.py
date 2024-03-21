@@ -9,6 +9,7 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
 # Create your views here.
 
+# Recipe CRUD View
 class RecipeView(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
@@ -48,10 +49,11 @@ class RecipeView(ModelViewSet):
         serializer = self.get_serializer(data=data)
     
         if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Recipe created successfully', 'data': serializer.data},  status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            if request.user.id == data['user']:
+                serializer.save()
+                return Response({'message': 'Recipe created successfully', 'data': serializer.data},  status=status.HTTP_201_CREATED)
+            return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
     def update(self, request, pk=None, *args, **kwargs):
@@ -90,6 +92,7 @@ class RecipeView(ModelViewSet):
         return Response({"messsage": 'Recipe deleted'}, status=status.HTTP_204_NO_CONTENT)
     
 
+# Show Public Recipes to all users
 class RecipeFeedView(APIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
@@ -106,31 +109,53 @@ class RecipeFeedView(APIView):
     
    
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def user_private_recipes(request):
-#     visibility = 'private'
-#     queryset = self.queryset.filter(visibility=visibility, user=request.user)
-#     if not queryset.exists():
-#         return Response({'message': 'There are no private recipes for you.'}, status=status.HTTP_404_NOT_FOUND)
-    
-#     serializer = self.serializer_class(queryset, many=True)
-#     return Response({'message': 'Your private recipes', 'data': serializer.data}, status=status.HTTP_200_OK)
-
+# show private recipes to Recipes author/user
 class UserPrivateRecipes(GenericViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
 
-    @action(detail=False, methods=['get'], url_path='private-recipes')
+    @action(detail=False, methods=['get'])
     def user_private_recipes(self, request):
         visibility = 'private'
         queryset = self.queryset.filter(visibility=visibility, user=request.user)
         if not queryset.exists():
             return Response({'message': 'There are no private recipes for you.'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         serializer = self.serializer_class(queryset, many=True)
         return Response({'message': 'Your private recipes', 'data': serializer.data}, status=status.HTTP_200_OK)
 
 
+
+class RecipeCollectionView(ModelViewSet):
+    queryset = RecipeCollection.objects.all()
+    serializer_class = RecipeCollectionSerializer
+
+
+    def list(self, request):
+        user = request.user
+        queryset = self.queryset.filter(user=user)
+        if not self.queryset.exists():
+            return Response({'message': 'Recipe collection empty.'}, status=status.HTTP_404_NOT_FOUND)
         
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'message': 'Request successful', 'data': serializer.data}, status=status.HTTP_200_OK)
+    
+
+    def create(self, request):
+        data = {
+            'name': request.data.get('name'),
+            'description': request.data.get('description'),
+            'user': request.user.id
+        }
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            if request.user.id == data['user']:
+                serializer.save()
+                return Response({'message': 'Recipe collection created successfully', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
     

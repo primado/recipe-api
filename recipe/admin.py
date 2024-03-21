@@ -10,7 +10,13 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(RecipeCollection)
 class RecipeCollection(admin.ModelAdmin):
-    list_display = ['name', 'user',]
+    list_display = ['name', 'user', 'description']
+
+@admin.register(RecipeCollectionRecipe)
+class RecipeCollectionRecipe(admin.ModelAdmin):
+    list_display = ['recipe', 'collection']
+    list_display_links = ['recipe', 'collection']
+
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
