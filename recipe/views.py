@@ -130,6 +130,12 @@ class RecipeCollectionView(ModelViewSet):
     queryset = RecipeCollection.objects.all()
     serializer_class = RecipeCollectionSerializer
 
+    def get_object(self, pk):
+        try:
+            return self.queryset.get(pk=pk)
+        except RecipeCollection.DoesNotExist:
+            return None
+
 
     def list(self, request):
         user = request.user
@@ -158,4 +164,41 @@ class RecipeCollectionView(ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+    def update(self, request, pk, *args, **kwargs):
+        collection_instance = self.get_object(pk)
+        data = {
+            'name': request.data.get('name'),
+            'description': request.data.get('description'),
+            'user': request.user.id
+        }
+
+        if not collection_instance:
+            return Response({'message': 'Recipe Collection does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(collection_instance, data=data)
+        if serializer.is_valid():
+            if request.user.id == data['user']:
+                serializer.save()
+                return Response({'message': 'Recipe collection updated successfully', 'data': serializer.data}, status=status.HTTP_200_OK)
+            return Response({'message': 'User unathorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+    def destroy(self, request, pk, *args, **kwargs):
+        collection_instance = self.get_object(pk)
+        if not collection_instance:
+            return Response({'message': 'Recipe Collection does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user_id_from_request =collection_instance.user.id
+        if request.user.id != user_id_from_request:
+            return Response({'message': 'User unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        collection_instance.delete()
+        return Response({'message': 'Recipe collection deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+    
+
+
+
+        
+
