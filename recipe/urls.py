@@ -8,7 +8,9 @@ router.register(r'recipe', RecipeView)
 
 
 urlpatterns = [
-    path('feed/', RecipeFeedView.as_view(), name="feed")
+    path('feed/', RecipeFeedView.as_view(), name="feed"),
+    path('private-recipes/', UserPrivateRecipes.as_view({'get': 'user_private_recipes'}), name="private-recipes")
+
 ]
 
 urlpatterns += router.urls
