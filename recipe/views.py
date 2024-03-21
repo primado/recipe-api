@@ -6,6 +6,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from .serializers import *
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from .models import *
 
 # Create your views here.
 
@@ -196,9 +197,28 @@ class RecipeCollectionView(ModelViewSet):
         return Response({'message': 'Recipe collection deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
-    
+    ### Views for adding and deleting a recipe to and from collection upon a request
 
 
-
+    def add_recipe(self, request, pk, *args, **kwargs):
+        collection_pk = pk
+        try:
+            collection = self.queryset.get(pk=collection_pk, user=request.user)
+        except RecipeCollection.DoesNotExist:
+            return Response({'message': 'Recipe Collection does not exist'}, status=status.HTTP_404_NOT_FOUND)
         
+        recipe_data = request.data.get('recipe')
+        if not recipe_data:
+            return Response({'message': 'Recipe data is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        recipe_serializer = RecipeSerializer(data=recipe_data)
+        if recipe_serializer.is_valid():
+            recipe_serializer.save()
+        else: 
+            return Response(recipe_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+        collection.recipe.add(recipe_serializer.instance)
+        return Response({'message': 'Recipe added to collection successfully.'}, status=status.HTTP_200_OK)
+
+
 
