@@ -210,4 +210,10 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # OTHER SETTINGS
 
+    'LICENSE': {
+        'name': 'MIT LICENSE',
+        'url': 'https://opensource.org/licenses/MIT',
+    },
+
+
 }

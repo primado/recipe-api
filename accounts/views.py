@@ -43,7 +43,8 @@ class DeleteAccount(ModelViewSet):
         return self.queryset.get(username=username)
 
     @extend_schema(
-            tags=['Delete User Account']
+            tags=['Delete User Account'],
+            description='Delete Account of User',
     )
     def destroy(self, request, username=None):
         try:
