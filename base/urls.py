@@ -18,15 +18,38 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from django.views.generic import TemplateView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 admin.site.site_title = "Recipe Management System Admin"
 admin.site.site_header = "Recipe Management System Adminstration"
 admin.site.index_title = "Recipe Management System administration"
 
+# API docs
+
+# schema_view = get_schema_view(
+#     openapi.Info(
+#         title="Recipe Management System REST API",
+#         default_version='v1',
+#         description="A REST API for a Recipe Management System",
+#         terms_of_service="https://www.example.com/terms/",
+#         contact=openapi.Contact(email="contact@example.com"),
+#         license=openapi.License(name="BSD License"),
+#     ),
+#     public=True,
+#     permission_classes=(permissions.AllowAny,),
+# )
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('accounts.urls')),
     path('api/', include('recipe.urls')),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
 if settings.DEBUG:

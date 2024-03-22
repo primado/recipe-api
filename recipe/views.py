@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
+from drf_spectacular.utils import extend_schema
 from .serializers import *
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
@@ -12,6 +13,9 @@ from .models import *
 # Create your views here.
 
 # Recipe CRUD View
+@extend_schema(
+    tags=['Recipe']
+)
 class RecipeView(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
@@ -31,10 +35,10 @@ class RecipeView(ModelViewSet):
         user = request.user
         queryset = self.queryset.filter(user=user)
         serializer = self.get_serializer(queryset, many=True)
-        return Response({'message': 'Request successful', 'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'message': 'Request Ok successful', 'data': serializer.data}, status=status.HTTP_200_OK)
 
 
-
+ 
     def create(self, request):
 
         data = {
@@ -58,7 +62,7 @@ class RecipeView(ModelViewSet):
             return Response({'message': 'User Unauthorized'}, content_type='multipart/form-data', status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-
+   
     def update(self, request, pk=None, *args, **kwargs):
         recipe_instance = self.get_object(pk, request.user.id)
 
@@ -84,7 +88,7 @@ class RecipeView(ModelViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    
+  
     def destroy(self, request, pk=None, *args, **kwargs):
         recipe_instance = self.get_object(pk, request.user.id)
 
@@ -96,11 +100,15 @@ class RecipeView(ModelViewSet):
     
 
 # Show Public Recipes to all users
+@extend_schema(
+    tags=['Recipe View']
+)
 class RecipeFeedView(APIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthenticated]
 
+ 
     def get(self, request):
         visibility = 'public'
         queryset = self.queryset.filter(visibility=visibility)
@@ -113,10 +121,14 @@ class RecipeFeedView(APIView):
    
 
 # show private recipes to Recipes author/user
+@extend_schema(
+    tags=['User Private Recipes']
+)
 class UserPrivateRecipes(GenericViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
 
+   
     @action(detail=False, methods=['get'])
     def user_private_recipes(self, request):
         visibility = 'private'
@@ -128,7 +140,9 @@ class UserPrivateRecipes(GenericViewSet):
         return Response({'message': 'Your private recipes', 'data': serializer.data}, status=status.HTTP_200_OK)
 
 
-
+@extend_schema(
+    tags=['Recipe Collection']
+)
 class RecipeCollectionView(ModelViewSet):
     queryset = RecipeCollection.objects.all()
     serializer_class = RecipeCollectionSerializer
@@ -141,7 +155,6 @@ class RecipeCollectionView(ModelViewSet):
         except RecipeCollection.DoesNotExist:
             return None
 
-
     def list(self, request):
         user = request.user
         queryset = self.queryset.filter(user=user)
@@ -152,7 +165,7 @@ class RecipeCollectionView(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response({'message': 'Request successful', 'data': serializer.data}, status=status.HTTP_200_OK)
     
-
+ 
     def create(self, request):
         data = {
             'name': request.data.get('name'),
@@ -168,7 +181,7 @@ class RecipeCollectionView(ModelViewSet):
             return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
+  
     def update(self, request, pk, *args, **kwargs):
         collection_instance = self.get_object(pk)
         data = {
@@ -188,7 +201,7 @@ class RecipeCollectionView(ModelViewSet):
             return Response({'message': 'User unathorized'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
+  
     def destroy(self, request, pk, *args, **kwargs):
         collection_instance = self.get_object(pk)
         if not collection_instance:
@@ -203,7 +216,9 @@ class RecipeCollectionView(ModelViewSet):
 
     ### Views for adding and deleting a recipe to and from collection upon a request
 
-
+    @extend_schema(
+            tags=['Add Recipe to Collection Inline']
+    )
     def add_recipe(self, request, pk, *args, **kwargs):
         collection_pk = pk
         try:
@@ -237,6 +252,9 @@ class RecipeCollectionView(ModelViewSet):
         return Response({'message': 'Recipe added to collection successfully.', 'data': recipe_serializer.data}, status=status.HTTP_200_OK)
     
 
+    @extend_schema(
+        tags=['Add Recipe to Collection Inline']
+    )
     def remove_recipe(self, request, *args, **kwargs):
         collection_pk = kwargs.get('pk')
         recipe_pk = self.kwargs.get('recipe_pk')
