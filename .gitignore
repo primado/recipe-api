@@ -5,3 +5,5 @@ accounts/__pycache__/
 
 base/__pycache__/
 recipe/__pycache__/
+
+schema.yml
