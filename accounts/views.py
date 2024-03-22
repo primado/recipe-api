@@ -9,9 +9,8 @@ from drf_spectacular.utils import extend_schema
 from .serializers import *
 
 # Create your views here.
-# @extend_schema(
-#     tags=['User Account']
-# )
+
+
 # class UserProfileUpdateView(ModelViewSet):
 #     queryset = CustomUser.objects.all()
 #     serializer_class = UpdateCustomUserSerializer

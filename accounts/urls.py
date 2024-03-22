@@ -19,6 +19,7 @@ urlpatterns = [
     path("token/refresh/", get_refresh_view().as_view(), name="token_refresh"),
     path('token/blacklist', TokenBlacklistView.as_view(), name="token-blacklist"),
 
+
     path('delete-account/<str:username>/', DeleteAccount.as_view({'delete': 'destroy'})),
 
     path('password/reset/', PasswordResetView.as_view(), name='rest_password_reset'),
