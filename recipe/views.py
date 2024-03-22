@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import *
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
@@ -15,6 +16,7 @@ class RecipeView(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
 
     def get_object(self, recipe_id, user):
@@ -53,7 +55,7 @@ class RecipeView(ModelViewSet):
             if request.user.id == data['user']:
                 serializer.save()
                 return Response({'message': 'Recipe created successfully', 'data': serializer.data},  status=status.HTTP_201_CREATED)
-            return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'message': 'User Unauthorized'}, content_type='multipart/form-data', status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
@@ -130,6 +132,8 @@ class UserPrivateRecipes(GenericViewSet):
 class RecipeCollectionView(ModelViewSet):
     queryset = RecipeCollection.objects.all()
     serializer_class = RecipeCollectionSerializer
+    parser_classes = [MultiPartParser, FormParser]
+
 
     def get_object(self, pk):
         try:
@@ -207,7 +211,19 @@ class RecipeCollectionView(ModelViewSet):
         except RecipeCollection.DoesNotExist:
             return Response({'message': 'Recipe Collection does not exist'}, status=status.HTTP_404_NOT_FOUND)
         
-        recipe_data = request.data.get('recipe')
+        data = {
+            'title': request.data.get('title'),
+            'description': request.data.get('description'),
+            'ingredient': request.data.get('ingredient'),
+            'instruction': request.data.get('instruction'),
+            'cooking_time': request.data.get('cooking_time'),
+            'visibility': request.data.get('visibility'),
+            'difficulty_level': request.data.get('difficulty_level'),
+            'recipe_image': request.data.get('recipe_image'),
+            'user': request.user.id
+        }
+        
+        recipe_data = data
         if not recipe_data:
             return Response({'message': 'Recipe data is required'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -218,7 +234,25 @@ class RecipeCollectionView(ModelViewSet):
             return Response(recipe_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
         collection.recipe.add(recipe_serializer.instance)
-        return Response({'message': 'Recipe added to collection successfully.'}, status=status.HTTP_200_OK)
+        return Response({'message': 'Recipe added to collection successfully.', 'data': recipe_serializer.data}, status=status.HTTP_200_OK)
+    
 
-
-
+    def remove_recipe(self, request, *args, **kwargs):
+        collection_pk = kwargs.get('pk')
+        recipe_pk = self.kwargs.get('recipe_pk')
+        try:
+            collection = self.queryset.get(pk=collection_pk, user=request.user)
+        except RecipeCollection.DoesNotExist:
+            user_data = {
+                'ussername': request.user.username,
+                'id': request.user.id
+            }
+            return Response({'message': 'Recipe Collection does not exist.', 'user': user_data}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            recipe = Recipe.objects.get(pk=recipe_pk)
+        except Recipe.DoesNotExist:
+            return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        
+        RecipeCollectionRecipe.objects.filter(collection=collection, recipe=recipe).delete()
+        return Response({'message': 'Recipe removed from collection sucessfully'}, status=status.HTTP_204_NO_CONTENT)

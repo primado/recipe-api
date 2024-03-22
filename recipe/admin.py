@@ -14,8 +14,16 @@ class RecipeCollection(admin.ModelAdmin):
 
 @admin.register(RecipeCollectionRecipe)
 class RecipeCollectionRecipe(admin.ModelAdmin):
-    list_display = ['recipe', 'collection']
+    list_display = ['recipe_id', 'recipe', 'collection', 'recipe_user']
     list_display_links = ['recipe', 'collection']
+
+    def recipe_user(self, obj):
+        return obj.recipe.user
+    recipe_user.shor_description = 'Recipe User'
+
+    def recipe_id(self, obj):
+        return obj.recipe.id
+    recipe_id.short_description = 'Recipe ID'
 
 
 @admin.register(Comment)
