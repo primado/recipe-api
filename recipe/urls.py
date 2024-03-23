@@ -18,7 +18,8 @@ urlpatterns = [
          name='remove-recipe-collection'),
 
     path('recipe/<int:recipe_pk>/comment/', CommentView.as_view({'get': 'list', 'post': 'create'})),
-    path('recipe/<int:recipe_pk>/comment/<int:comment_pk>/', CommentView.as_view({'put': 'update'})),
+    path('recipe/<int:recipe_pk>/comment/<int:comment_pk>/',
+         CommentView.as_view({'put': 'update', 'delete': 'destroy'})),
 
 
 

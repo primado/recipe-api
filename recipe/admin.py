@@ -34,7 +34,7 @@ class RecipeCollectionRecipe(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['id', 'text', 'user', 'recipe']
+    list_display = ['id', 'user', 'text', 'recipe']
     list_select_related = ['recipe']
     search_fields = ['recipe', 'text']
     list_display_links = ['text', 'user']
@@ -51,14 +51,14 @@ class RatingAdmin(admin.ModelAdmin):
     list_display_links = ['user', 'recipe']
 
     def upvote_count(self, obj):
-        return Rating.objects.filter(recipe=obj.recipe, vote_type='upvotes')
+        return Rating.objects.filter(recipe=obj.recipe, vote_type='upvote')
 
-    upvote_count.short_description = 'Upvotes'
+    upvote_count.short_description = 'Upvote'
 
     def downvote_count(self, obj):
         return Rating.objects.filter(recipe=obj.recipe, vote_type='downvote')
 
-    downvote_count.short_description = 'downvotes'
+    downvote_count.short_description = 'Downvote'
 
 
 @admin.register(CommentVote)

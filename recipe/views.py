@@ -326,11 +326,19 @@ class CommentView(GenericViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
+    def get_queryset(self):
+        return Comment.objects.all()
+
+    def get_serializer_class(self):
+        return CommentSerializer
+
     def list(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
         recipe = get_object_or_404(Recipe, pk=recipe_pk, visibility='public')
-        queryset = Comment.objects.get(recipe=recipe)
-        serializer = CommentSerializer(queryset)
+        # queryset = Comment.objects.get(recipe=recipe)
+        queryset = self.get_queryset().filter(recipe=recipe)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(queryset, many=True)
         return Response({'message': 'Request Successful', 'data': serializer.data}, status=status.HTTP_200_OK)
 
     def create(self, request, recipe_pk):
@@ -348,7 +356,8 @@ class CommentView(GenericViewSet):
         if not comment_data:
             return Response({'message': 'Text field cannot be blank'}, status=status.HTTP_400_BAD_REQUEST)
 
-        comment_serializer = self.serializer_class(data=comment_data)
+        comment_serializer_class = self.get_serializer_class()
+        comment_serializer = comment_serializer_class(data=comment_data)
 
         if comment_serializer.is_valid():
             if request.user.id == data['user']:
@@ -380,3 +389,17 @@ class CommentView(GenericViewSet):
                                 status=status.HTTP_201_CREATED)
             return Response({'message': 'User does not exist.'}, status=status.HTTP_403_FORBIDDEN)
         return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        comment_pk = self.kwargs.get('comment_pk')
+        comment_instance = self.get_queryset().get(pk=comment_pk, recipe=recipe_pk)
+        if not comment_instance:
+            return Response({'message': 'Comment doest not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        elif request.user.id != comment_instance.user_id:
+            return Response({'message': 'User is forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        else:
+            comment_instance.delete()
+        return Response({'message': 'Comment deleted'}, content_type='application/json',
+                        status=status.HTTP_204_NO_CONTENT)
+
