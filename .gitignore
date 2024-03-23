@@ -7,3 +7,5 @@ base/__pycache__/
 recipe/__pycache__/
 
 schema.yml
+
+.idea/
