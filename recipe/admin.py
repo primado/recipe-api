@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import *
+
+
 # Register your models here.
 
 @admin.register(Recipe)
@@ -8,9 +10,11 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ['description', 'ingredient']
     list_display_links = ['title', 'user']
 
+
 @admin.register(RecipeCollection)
 class RecipeCollection(admin.ModelAdmin):
     list_display = ['id', 'name', 'user', 'description']
+
 
 @admin.register(RecipeCollectionRecipe)
 class RecipeCollectionRecipe(admin.ModelAdmin):
@@ -19,10 +23,12 @@ class RecipeCollectionRecipe(admin.ModelAdmin):
 
     def recipe_user(self, obj):
         return obj.recipe.user
+
     recipe_user.shor_description = 'Recipe User'
 
     def recipe_id(self, obj):
         return obj.recipe.id
+
     recipe_id.short_description = 'Recipe ID'
 
 
@@ -35,25 +41,44 @@ class CommentAdmin(admin.ModelAdmin):
 
     def comments_count(self, obj):
         return Comment.objects.filter(recipe=obj.recipe).count()
+
     comments_count.short_description = 'Total Comment'
 
 
 @admin.register(Rating)
 class RatingAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'recipe', 'vote_type' , 'upvote_count', 'downvote_count']
+    list_display = ['id', 'user', 'recipe', 'vote_type', 'upvote_count', 'downvote_count']
     list_display_links = ['user', 'recipe']
 
     def upvote_count(self, obj):
         return Rating.objects.filter(recipe=obj.recipe, vote_type='upvotes')
+
     upvote_count.short_description = 'Upvotes'
 
     def downvote_count(self, obj):
         return Rating.objects.filter(recipe=obj.recipe, vote_type='downvote')
+
     downvote_count.short_description = 'downvotes'
+
+
+@admin.register(CommentVote)
+class CommentVoteAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'comment', ]
+    list_display_links = ['user', 'comment']
+
+    def upvote_count(self, obj):
+        return CommentVote.objects.filter(comment=obj.comment, vote_type='upvote').count()
+
+    upvote_count.short_description = 'Upvote Count'
+
+    def downvote_count(self, obj):
+        return CommentVote.objects.filter(comment=obj.comment, vote_type='downvote').count()
+
+    downvote_count.short_description = 'Downvote count'
+
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ['id', 'name']
+    list_display_links = ['name']
     search_fields = ['name']
-
-

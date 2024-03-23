@@ -97,6 +97,22 @@ class Rating(models.Model):
         unique_together = [['user_id', 'recipe_id']]
 
 
+class CommentVote(models.Model):
+    UPVOTE = 'upvote'
+    DOWNVOTE = 'downvote'
+    VOTE_CHOICE = [
+        (UPVOTE, "Upvote"),
+        (DOWNVOTE, "Downvote")
+    ]
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    vote_type = models.CharField(max_length=10, choices=VOTE_CHOICE)
+
+    class Meta:
+        db_table = 'CommentVote'
+        unique_together = [['user', 'comment']]
+
+
 class Tag(models.Model):
     name = models.CharField(max_length=30)
     created_at = models.DateField(auto_now_add=True)
