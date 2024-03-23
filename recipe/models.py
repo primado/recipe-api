@@ -69,7 +69,7 @@ class Comment(models.Model):
     text = models.TextField()
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    created_at = models.TimeField()
+    created_at = models.TimeField(auto_now=True)
 
     def __str__(self):
         return self.text

@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema
+from django.shortcuts import get_object_or_404
 from .serializers import *
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
@@ -105,7 +106,6 @@ class RecipeView(ModelViewSet):
 
     @extend_schema(
         request=RecipeSerializer,
-        responses={204: RecipeSerializer},
         description='Delete Recipe'
     )
     def destroy(self, request, pk=None, *args, **kwargs):
@@ -237,12 +237,11 @@ class RecipeCollectionView(ModelViewSet):
                 serializer.save()
                 return Response({'message': 'Recipe collection updated successfully', 'data': serializer.data},
                                 status=status.HTTP_200_OK)
-            return Response({'message': 'User unathorized'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'message': 'User unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         request=RecipeCollectionSerializer,
-        responses={201: RecipeCollectionSerializer},
         description='Delete Collection',
     )
     def destroy(self, request, pk, *args, **kwargs):
@@ -299,7 +298,6 @@ class RecipeCollectionView(ModelViewSet):
     @extend_schema(
         tags=['Add Recipe to Collection Inline'],
         description='Delete Recipe from Collection Directly',
-        responses={204: RecipeSerializer},
         request=RecipeSerializer,
     )
     def remove_recipe(self, request, *args, **kwargs):
@@ -309,7 +307,7 @@ class RecipeCollectionView(ModelViewSet):
             collection = self.queryset.get(pk=collection_pk, user=request.user)
         except RecipeCollection.DoesNotExist:
             user_data = {
-                'ussername': request.user.username,
+                'username': request.user.username,
                 'id': request.user.id
             }
             return Response({'message': 'Recipe Collection does not exist.', 'user': user_data},
@@ -319,6 +317,66 @@ class RecipeCollectionView(ModelViewSet):
             recipe = Recipe.objects.get(pk=recipe_pk)
         except Recipe.DoesNotExist:
             return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
         RecipeCollectionRecipe.objects.filter(collection=collection, recipe=recipe).delete()
         return Response({'message': 'Recipe removed from collection successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# Comment View
+class CommentView(GenericViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+    def list(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        recipe = get_object_or_404(Recipe, pk=recipe_pk, visibility='public')
+        queryset = Comment.objects.get(recipe=recipe)
+        serializer = CommentSerializer(queryset)
+        return Response({'message': 'Request Successful', 'data': serializer.data}, status=status.HTTP_200_OK)
+
+    def create(self, request, recipe_pk):
+        recipe_pk = recipe_pk
+        try:
+            recipe = Recipe.objects.get(pk=recipe_pk, visibility='public')
+        except Recipe.DoesNotExist:
+            return Response({'message': 'Recipe does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        data = {
+            'text': request.data.get('text'),
+            'recipe': recipe_pk,
+            'user': request.user.id
+        }
+        comment_data = data
+        if not comment_data:
+            return Response({'message': 'Text field cannot be blank'}, status=status.HTTP_400_BAD_REQUEST)
+
+        comment_serializer = self.serializer_class(data=comment_data)
+
+        if comment_serializer.is_valid():
+            if request.user.id == data['user']:
+                comment_serializer.save()
+                return Response({'message': 'Comment created successfully', 'data': comment_serializer.data},
+                                status=status.HTTP_201_CREATED)
+            return Response({'message': 'User does not exist'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, recipe_pk, comment_pk, *args, **kwargs):
+        recipe_pk = recipe_pk
+        comment_pk = comment_pk
+        comment_instance = self.queryset.get(pk=comment_pk, recipe=recipe_pk)
+        try:
+            recipe = Recipe.objects.get(pk=recipe_pk, visibility='public')
+        except Recipe.DoesNotExist:
+            return Response({'message': 'Recipe does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        data = {
+            'text': request.data.get('text'),
+            'recipe': recipe_pk,
+            'user': request.user.id
+        }
+        comment_serializer = self.serializer_class(comment_instance, data=data)
+        if comment_serializer.is_valid():
+            if request.user.id == comment_instance.user_id:
+                comment_serializer.save()
+                return Response({'message': 'Comment updated successfully.', 'data': comment_serializer.data},
+                                status=status.HTTP_201_CREATED)
+            return Response({'message': 'User does not exist.'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
