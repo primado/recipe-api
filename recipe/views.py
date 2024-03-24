@@ -88,7 +88,7 @@ class RecipeView(ModelViewSet):
             'title': request.data.get('title'),
             'description': request.data.get('description'),
             'ingredient': request.data.get('ingredient'),
-            'intruction': request.data.get('instruction'),
+            'instruction': request.data.get('instruction'),
             'cooking_time': request.data.get('cooking_time'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
@@ -321,7 +321,12 @@ class RecipeCollectionView(ModelViewSet):
         return Response({'message': 'Recipe removed from collection successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 
+
 # Comment View
+@extend_schema(
+    tags=['Comment'],
+    description='Add comments to public recipes.'
+)
 class CommentView(GenericViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
@@ -332,6 +337,11 @@ class CommentView(GenericViewSet):
     def get_serializer_class(self):
         return CommentSerializer
 
+    @extend_schema(
+        description='List Comments for a Particular recipe',
+        responses={200: CommentSerializer},
+        request=CommentSerializer,
+    )
     def list(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
         recipe = get_object_or_404(Recipe, pk=recipe_pk, visibility='public')
@@ -341,6 +351,11 @@ class CommentView(GenericViewSet):
         serializer = serializer_class(queryset, many=True)
         return Response({'message': 'Request Successful', 'data': serializer.data}, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        request=CommentSerializer,
+        responses={201: CommentSerializer},
+        description='Create a comment'
+    )
     def create(self, request, recipe_pk):
         recipe_pk = recipe_pk
         try:
@@ -390,6 +405,11 @@ class CommentView(GenericViewSet):
             return Response({'message': 'User does not exist.'}, status=status.HTTP_403_FORBIDDEN)
         return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        request=CommentSerializer,
+        responses={201: CommentSerializer},
+        description='Delete a comment'
+    )
     def destroy(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
         comment_pk = self.kwargs.get('comment_pk')
