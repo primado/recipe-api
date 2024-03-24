@@ -321,7 +321,6 @@ class RecipeCollectionView(ModelViewSet):
         return Response({'message': 'Recipe removed from collection successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 
-
 # Comment View
 @extend_schema(
     tags=['Comment'],
@@ -422,4 +421,3 @@ class CommentView(GenericViewSet):
             comment_instance.delete()
         return Response({'message': 'Comment deleted'}, content_type='application/json',
                         status=status.HTTP_204_NO_CONTENT)
-
