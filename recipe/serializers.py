@@ -28,6 +28,12 @@ class RecipeVoteSerializer(serializers.ModelSerializer):
         fields = '__a__'
 
 
+class RecipeRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = '__all__'
+
+
 class CommentVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommentVote

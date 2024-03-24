@@ -173,6 +173,7 @@ class RecipeCollectionView(ModelViewSet):
     queryset = RecipeCollection.objects.all()
     serializer_class = RecipeCollectionSerializer
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
         try:
@@ -329,6 +330,7 @@ class RecipeCollectionView(ModelViewSet):
 class CommentView(GenericViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Comment.objects.all()
@@ -421,3 +423,19 @@ class CommentView(GenericViewSet):
             comment_instance.delete()
         return Response({'message': 'Comment deleted'}, content_type='application/json',
                         status=status.HTTP_204_NO_CONTENT)
+
+# RECIPE RATING VIEW
+class RecipeRatingView(GenericViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Rating.objects.all()
+
+    def get_serializer_class(self):
+        return RecipeRatingSerializer
+
+    # def list(self, request, *args, **kwargs):
+
+
+
+
