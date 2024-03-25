@@ -91,11 +91,10 @@ class Rating(models.Model):
     ]
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    vote_type = models.CharField(max_length=10, choices=VOTE_CHOICE)
+    vote_type = models.CharField(max_length=10, choices=VOTE_CHOICE, blank=True, null=True)
 
     class Meta:
         unique_together = [['user_id', 'recipe_id']]
-
 
 class CommentVote(models.Model):
     UPVOTE = 'upvote'

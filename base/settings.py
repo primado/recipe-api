@@ -70,6 +70,8 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
 ]
 
+APPEND_SLASH = False
+
 ROOT_URLCONF = 'base.urls'
 
 TEMPLATES = [
