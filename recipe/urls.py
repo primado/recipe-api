@@ -21,8 +21,9 @@ urlpatterns = [
     path('recipe/<int:recipe_pk>/comment/<int:comment_pk>/',
          CommentView.as_view({'put': 'update', 'delete': 'destroy'})),
 
-
-
+    # RECIPE RATING
+    path('recipe/<int:recipe_pk>/rating', RecipeRatingView.as_view({'get': 'list', 'post': 'create'})),
+    path('recipe/<int:recipe_pk>/rating/<int:rating_pk>', RecipeRatingView.as_view({'put': 'update', 'delete': 'destroy'})),
 ]
 
 urlpatterns += router.urls
