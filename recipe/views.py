@@ -382,6 +382,11 @@ class CommentView(GenericViewSet):
 
         return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        request=CommentSerializer,
+        responses={200: CommentSerializer},
+        description='Update a comment'
+    )
     def update(self, request, recipe_pk, comment_pk, *args, **kwargs):
         recipe_pk = recipe_pk
         comment_pk = comment_pk
@@ -406,7 +411,7 @@ class CommentView(GenericViewSet):
 
     @extend_schema(
         request=CommentSerializer,
-        responses={201: CommentSerializer},
+        responses={204: CommentSerializer},
         description='Delete a comment'
     )
     def destroy(self, request, *args, **kwargs):
@@ -424,6 +429,10 @@ class CommentView(GenericViewSet):
 
 
 # RECIPE RATING VIEW
+@extend_schema(
+    tags=['Rate Recipe'],
+    description='Upvote or Downvote a Recipe.'
+)
 class RecipeRatingView(GenericViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -433,6 +442,11 @@ class RecipeRatingView(GenericViewSet):
     def get_serializer_class(self):
         return RecipeRatingSerializer
 
+    @extend_schema(
+        description='Get the number of Rating Counts for a Recipe',
+        responses={200: RecipeRatingSerializer},
+        request=RecipeSerializer,
+    )
     def list(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
         upvote_count = self.get_queryset().filter(recipe=recipe_pk, vote_type=Rating.UPVOTE).count()
@@ -446,6 +460,11 @@ class RecipeRatingView(GenericViewSet):
         return Response({'message': 'Request (Ok) successful', 'upvote_count': upvote_count,
                          'downvote_count': downvote_count}, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        request=RecipeRatingSerializer,
+        responses={201: RecipeRatingSerializer},
+        description='Rate a Recipe i.e. either upvote or downvote'
+    )
     def create(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
 
@@ -468,6 +487,11 @@ class RecipeRatingView(GenericViewSet):
             return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        request=RecipeSerializer,
+        responses={200: RecipeRatingSerializer},
+        description='Update a Rating on a Recipe'
+    )
     def update(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
         rating_pk = self.kwargs.get('rating_pk')
@@ -494,6 +518,11 @@ class RecipeRatingView(GenericViewSet):
                             status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        request=RecipeRatingSerializer,
+        responses={204: RecipeRatingSerializer},
+        description='Delete a Rating'
+    )
     def destroy(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
         rating_pk = self.kwargs.get('rating_pk')
