@@ -51,12 +51,12 @@ class RatingAdmin(admin.ModelAdmin):
     list_display_links = ['user', 'recipe']
 
     def upvote_count(self, obj):
-        return Rating.objects.filter(recipe=obj.recipe, vote_type='upvote')
+        return Rating.objects.filter(recipe=obj.recipe, vote_type='upvote').count()
 
     upvote_count.short_description = 'Upvote'
 
     def downvote_count(self, obj):
-        return Rating.objects.filter(recipe=obj.recipe, vote_type='downvote')
+        return Rating.objects.filter(recipe=obj.recipe, vote_type='downvote').count()
 
     downvote_count.short_description = 'Downvote'
 

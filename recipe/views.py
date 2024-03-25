@@ -24,13 +24,13 @@ class RecipeView(ModelViewSet):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def get_object(self, recipe_id, user):
-        recipe_id = self.kwargs.get('pk')
-        user = self.request.user
-        try:
-            return self.queryset.get(id=recipe_id, user=user)
-        except Recipe.DoesNotExist:
-            return None
+    # def get_object(self, recipe_id, user):
+    #     recipe_id = self.kwargs.get('pk')
+    #     user = self.request.user
+    #     try:
+    #         return self.queryset.get(id=recipe_id, user=user)
+    #     except Recipe.DoesNotExist:
+    #         return None
 
     @extend_schema(
         request=RecipeSerializer,
@@ -78,8 +78,9 @@ class RecipeView(ModelViewSet):
         responses={200: RecipeSerializer},
         description='Update Recipe'
     )
-    def update(self, request, pk=None, *args, **kwargs):
-        recipe_instance = self.get_object(pk, request.user.id)
+    def update(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        recipe_instance = self.queryset.filter(pk=recipe_pk, user=request.user)
 
         if not recipe_instance:
             return Response({'message': 'Recipe does doest not exist'}, status=status.HTTP_404_NOT_FOUND)
@@ -98,18 +99,21 @@ class RecipeView(ModelViewSet):
 
         serializer = self.get_serializer(instance=recipe_instance, data=data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Recipe updated successfully', 'data': serializer.data},
-                            status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            if request.user.id == recipe_instance.get(user=request.user):
+                serializer.save()
+                return Response({'message': 'Recipe updated successfully', 'data': serializer.data},
+                                status=status.HTTP_200_OK)
+            return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         request=RecipeSerializer,
         description='Delete Recipe'
     )
-    def destroy(self, request, pk=None, *args, **kwargs):
-        recipe_instance = self.get_object(pk, request.user.id)
+    def destroy(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        recipe_instance = self.queryset.filter(pk=recipe_pk, user=request.user)
 
         if not recipe_instance:
             return Response({"message": 'Recipe does not exist.'}, status=status.HTTP_404_NOT_FOUND)
@@ -173,12 +177,7 @@ class RecipeCollectionView(ModelViewSet):
     queryset = RecipeCollection.objects.all()
     serializer_class = RecipeCollectionSerializer
     parser_classes = [MultiPartParser, FormParser]
-
-    def get_object(self, pk):
-        try:
-            return self.queryset.get(pk=pk)
-        except RecipeCollection.DoesNotExist:
-            return None
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=RecipeSerializer,
@@ -221,7 +220,7 @@ class RecipeCollectionView(ModelViewSet):
         description='Update Collection'
     )
     def update(self, request, pk, *args, **kwargs):
-        collection_instance = self.get_object(pk)
+        collection_instance = RecipeCollection.objects.filter(pk=pk, user=request.user)
         data = {
             'name': request.data.get('name'),
             'description': request.data.get('description'),
@@ -231,7 +230,7 @@ class RecipeCollectionView(ModelViewSet):
         if not collection_instance:
             return Response({'message': 'Recipe Collection does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = self.get_serializer(collection_instance, data=data)
+        serializer = self.serializer_class(instance=collection_instance, data=data)
         if serializer.is_valid():
             if request.user.id == data['user']:
                 serializer.save()
@@ -245,11 +244,11 @@ class RecipeCollectionView(ModelViewSet):
         description='Delete Collection',
     )
     def destroy(self, request, pk, *args, **kwargs):
-        collection_instance = self.get_object(pk)
+        collection_instance = RecipeCollection.objects.filter(pk=pk, user=request.user)
         if not collection_instance:
             return Response({'message': 'Recipe Collection does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
-        user_id_from_request = collection_instance.user.id
+        user_id_from_request = collection_instance.get(user=request.user)
         if request.user.id != user_id_from_request:
             return Response({'message': 'User unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
         collection_instance.delete()
@@ -329,6 +328,7 @@ class RecipeCollectionView(ModelViewSet):
 class CommentView(GenericViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Comment.objects.all()
@@ -395,7 +395,7 @@ class CommentView(GenericViewSet):
             'recipe': recipe_pk,
             'user': request.user.id
         }
-        comment_serializer = self.serializer_class(comment_instance, data=data)
+        comment_serializer = self.serializer_class(instance=comment_instance, data=data)
         if comment_serializer.is_valid():
             if request.user.id == comment_instance.user_id:
                 comment_serializer.save()
@@ -421,3 +421,90 @@ class CommentView(GenericViewSet):
             comment_instance.delete()
         return Response({'message': 'Comment deleted'}, content_type='application/json',
                         status=status.HTTP_204_NO_CONTENT)
+
+
+# RECIPE RATING VIEW
+class RecipeRatingView(GenericViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Rating.objects.all()
+
+    def get_serializer_class(self):
+        return RecipeRatingSerializer
+
+    def list(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        upvote_count = self.get_queryset().filter(recipe=recipe_pk, vote_type=Rating.UPVOTE).count()
+        downvote_count = self.get_queryset().filter(recipe=recipe_pk, vote_type=Rating.DOWNVOTE).count()
+
+        data = {
+            'upvote': upvote_count,
+            'downvote_count': downvote_count,
+        }
+        rating_serializer = self.get_serializer_class()
+        return Response({'message': 'Request (Ok) successful', 'upvote_count': upvote_count,
+                         'downvote_count': downvote_count}, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+
+        data = {
+            'user': request.user.id,
+            'recipe': recipe_pk,
+            'vote_type': request.data.get('vote_type')
+        }
+        recipe = Recipe.objects.filter(pk=recipe_pk)
+        if not recipe.exists():
+            return Response({'message': 'Recipe does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+        create_serializer = self.get_serializer_class()
+        serializer = create_serializer(data=data)
+        if serializer.is_valid():
+            if request.user.id == data['user']:
+                serializer.save()
+                return Response({'message': 'Rating created successfully', 'data': serializer.data},
+                                status=status.HTTP_201_CREATED)
+            return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        rating_pk = self.kwargs.get('rating_pk')
+
+        try:
+            rating = self.get_queryset().get(pk=rating_pk, recipe=recipe_pk, user=request.user)
+        except Rating.DoesNotExist:
+            return Response({'message': 'Rating does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        vote_type = request.data.get("vote_type")
+        if vote_type not in [Rating.UPVOTE, Rating.DOWNVOTE]:
+            return Response({'message': 'Invalid vote type'}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = {
+            'recipe': recipe_pk,
+            'user': request.user.id,
+            'vote_type': vote_type,
+        }
+        rating_serializer = self.get_serializer_class()
+        serializer = rating_serializer(instance=rating, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Vote type updated successfully', 'data': serializer.data},
+                            status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        rating_pk = self.kwargs.get('rating_pk')
+
+        try:
+            rating = self.get_queryset().filter(pk=rating_pk, recipe=recipe_pk, user=request.user)
+        except Rating.DoesNotExist:
+            return Response({'message': 'Vote type does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        if rating.exists():
+            rating.delete()
+            return Response({'message': 'Vote type deleted'}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({'message': 'Vote type does not exist'}, status=status.HTTP_400_BAD_REQUEST)
