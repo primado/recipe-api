@@ -4,11 +4,13 @@ from . views import *
 
 
 router = DefaultRouter()
-router.register(r'recipe', RecipeView)
+# router.register(r'recipe', RecipeView)
 router.register(r'collection', RecipeCollectionView)
 
 
 urlpatterns = [
+    path('recipe',RecipeView.as_view({'get': 'list', 'post': 'create'})),
+    path('recipe/<int:recipe_pk>', RecipeView.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
     path('feed/', RecipeFeedView.as_view(), name="feed"),
     path('private-recipes/', UserPrivateRecipes.as_view({'get': 'user_private_recipes'}), name="private-recipes"),
     path('collection/<int:pk>/add-recipe/', RecipeCollectionView.as_view({'post': 'add_recipe'}),
@@ -23,7 +25,12 @@ urlpatterns = [
 
     # RECIPE RATING
     path('recipe/<int:recipe_pk>/rating', RecipeRatingView.as_view({'get': 'list', 'post': 'create'})),
-    path('recipe/<int:recipe_pk>/rating/<int:rating_pk>', RecipeRatingView.as_view({'put': 'update', 'delete': 'destroy'})),
+    path('recipe/<int:recipe_pk>/rating/<int:rating_pk>', RecipeRatingView.as_view({'put': 'update',
+                                                                                    'delete': 'destroy'})),
+
+    # # Retrieve URLS
+    # path('recipe/<int:recipe_pk>/')
+
 ]
 
 urlpatterns += router.urls
