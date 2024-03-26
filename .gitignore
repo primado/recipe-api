@@ -9,3 +9,4 @@ recipe/__pycache__/
 schema.yml
 
 .idea/
+uploads/recipe-images/

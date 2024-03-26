@@ -18,24 +18,16 @@ from .models import *
 @extend_schema(
     tags=['Recipe']
 )
-class RecipeView(ModelViewSet):
+class RecipeView(GenericViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
-
-    # def get_object(self, recipe_id, user):
-    #     recipe_id = self.kwargs.get('pk')
-    #     user = self.request.user
-    #     try:
-    #         return self.queryset.get(id=recipe_id, user=user)
-    #     except Recipe.DoesNotExist:
-    #         return None
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         request=RecipeSerializer,
         responses={200: RecipeSerializer},
-        description='Recipe List',
+        description='Recipe List View',
     )
     def list(self, request):
         user = request.user
@@ -45,45 +37,36 @@ class RecipeView(ModelViewSet):
 
     @extend_schema(
         request=RecipeSerializer,
-        responses={201: RecipeSerializer},
-        description='Create Recipe'
+        responses={200: RecipeSerializer},
+        description="Recipe Detail View"
     )
-    def create(self, request):
+    def retrieve(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        try:
+            recipe = Recipe.objects.get(pk=recipe_pk)
+        except Recipe.DoesNotExist:
+            return Response({'detail': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        data = {
-            'title': request.data.get('title'),
-            'description': request.data.get('description'),
-            'ingredient': request.data.get('ingredient'),
-            'intruction': request.data.get('instruction'),
-            'cooking_time': request.data.get('cooking_time'),
-            'visibility': request.data.get('visibility'),
-            'difficulty_level': request.data.get('difficulty_level'),
-            'recipe_image': request.data.get('recipe_image'),
-            'user': request.user.id
-        }
+        serializer = self.get_serializer(recipe)
+        if request.user == recipe.user:
+            return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
-        serializer = self.get_serializer(data=data)
+        elif request.user != recipe.user_id and recipe.visibility == 'private':
+            return Response({'message': 'You do not have permission to access this private recipe.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
-        if serializer.is_valid():
-            if request.user.id == data['user']:
-                serializer.save()
-                return Response({'message': 'Recipe created successfully', 'data': serializer.data},
-                                status=status.HTTP_201_CREATED)
-            return Response({'message': 'User Unauthorized'}, content_type='multipart/form-data',
-                            status=status.HTTP_401_UNAUTHORIZED)
+        elif recipe.visibility == 'public':
+            return Response({'data': serializer.data},
+                            status=status.HTTP_200_OK)
+        # Handle unexpected cases
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         request=RecipeSerializer,
-        responses={200: RecipeSerializer},
-        description='Update Recipe'
+        responses={201: RecipeSerializer},
+        description='Create Recipe View'
     )
-    def update(self, request, *args, **kwargs):
-        recipe_pk = self.kwargs.get('recipe_pk')
-        recipe_instance = self.queryset.filter(pk=recipe_pk, user=request.user)
-
-        if not recipe_instance:
-            return Response({'message': 'Recipe does doest not exist'}, status=status.HTTP_404_NOT_FOUND)
+    def create(self, request):
 
         data = {
             'title': request.data.get('title'),
@@ -97,11 +80,47 @@ class RecipeView(ModelViewSet):
             'user': request.user.id
         }
 
+        serializer = self.get_serializer(data=data)
+
+        if serializer.is_valid():
+            if request.user.id == data['user']:
+                serializer.save()
+                return Response({'message': 'Recipe created successfully', 'data': serializer.data},
+                                content_type='multipart/form-data',
+                                status=status.HTTP_201_CREATED)
+            return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        request=RecipeSerializer,
+        responses={200: RecipeSerializer},
+        description='Update Recipe View'
+    )
+    def update(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+        recipe_instance = Recipe.objects.get(pk=recipe_pk, user=request.user)
+
+        if not recipe_instance:
+            return Response({'message': 'Recipe does doest not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = {
+            'id': recipe_pk,
+            'title': request.data.get('title'),
+            'description': request.data.get('description'),
+            'ingredient': request.data.get('ingredient'),
+            'instruction': request.data.get('instruction'),
+            'cooking_time': request.data.get('cooking_time'),
+            'visibility': request.data.get('visibility'),
+            'difficulty_level': request.data.get('difficulty_level'),
+            'recipe_image': request.data.get('recipe_image'),
+            'user': request.user.id
+        }
+
         serializer = self.get_serializer(instance=recipe_instance, data=data, partial=True)
         if serializer.is_valid():
-            if request.user.id == recipe_instance.get(user=request.user):
+            if request.user.id == recipe_instance.user.id:
                 serializer.save()
-                return Response({'message': 'Recipe updated successfully', 'data': serializer.data},
+                return Response({'data': serializer.data}, content_type='multipart/form-data',
                                 status=status.HTTP_200_OK)
             return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -109,7 +128,7 @@ class RecipeView(ModelViewSet):
 
     @extend_schema(
         request=RecipeSerializer,
-        description='Delete Recipe'
+        description='Delete Recipe View'
     )
     def destroy(self, request, *args, **kwargs):
         recipe_pk = self.kwargs.get('recipe_pk')
@@ -124,7 +143,8 @@ class RecipeView(ModelViewSet):
 
 # Show Public Recipes to all users
 @extend_schema(
-    tags=['Recipe View']
+    tags=['Recipe Feed View'],
+    description='Public Recipe Feeds'
 )
 class RecipeFeedView(APIView):
     queryset = Recipe.objects.all()
@@ -140,10 +160,10 @@ class RecipeFeedView(APIView):
         visibility = 'public'
         queryset = self.queryset.filter(visibility=visibility)
         if not queryset.exists():
-            return Response({'message': 'There are no public recipes'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Public recipes not found'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(queryset, many=True)
-        return Response({'message': 'Public recipes', 'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
 
 # show private recipes to Recipes author/user
@@ -157,17 +177,20 @@ class UserPrivateRecipes(GenericViewSet):
     @extend_schema(
         request=RecipeSerializer,
         responses={200: RecipeSerializer},
-        description='Private Recipes'
+        description='Private Recipes View'
     )
     @action(detail=False, methods=['get'])
     def user_private_recipes(self, request):
         visibility = 'private'
         queryset = self.queryset.filter(visibility=visibility, user=request.user)
         if not queryset.exists():
-            return Response({'message': 'There are no private recipes for you.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Private recipes not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.serializer_class(queryset, many=True)
-        return Response({'message': 'Your private recipes', 'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
+
 
 
 @extend_schema(
@@ -182,7 +205,7 @@ class RecipeCollectionView(ModelViewSet):
     @extend_schema(
         request=RecipeSerializer,
         responses={200: RecipeSerializer},
-        description='Collection List'
+        description='Collection List View'
     )
     def list(self, request):
         user = request.user
@@ -191,7 +214,8 @@ class RecipeCollectionView(ModelViewSet):
             return Response({'message': 'Recipe collection empty.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response({'message': 'Request successful', 'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data}, content_type='application/json',
+                        status=status.HTTP_200_OK)
 
     @extend_schema(
         request=RecipeSerializer,
@@ -211,7 +235,8 @@ class RecipeCollectionView(ModelViewSet):
                 serializer.save()
                 return Response({'message': 'Recipe collection created successfully', 'data': serializer.data},
                                 status=status.HTTP_201_CREATED)
-            return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'message': 'User Unauthorized'}, content_type='application/json',
+                            status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
@@ -236,7 +261,8 @@ class RecipeCollectionView(ModelViewSet):
                 serializer.save()
                 return Response({'message': 'Recipe collection updated successfully', 'data': serializer.data},
                                 status=status.HTTP_200_OK)
-            return Response({'message': 'User unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'message': 'User unauthorized'}, content_type='application/json',
+                            status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
@@ -291,7 +317,7 @@ class RecipeCollectionView(ModelViewSet):
             return Response(recipe_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         collection.recipe.add(recipe_serializer.instance, through_defaults=True)
-        return Response({'message': 'Recipe added to collection successfully.', 'data': recipe_serializer.data},
+        return Response({'data': recipe_serializer.data},
                         content_type='multipart/form-data', status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -311,13 +337,14 @@ class RecipeCollectionView(ModelViewSet):
             }
             return Response({'message': 'Recipe Collection does not exist.', 'user': user_data},
                             status=status.HTTP_404_NOT_FOUND)
-
         try:
             recipe = Recipe.objects.get(pk=recipe_pk)
         except Recipe.DoesNotExist:
             return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
         RecipeCollectionRecipe.objects.filter(collection=collection, recipe=recipe).delete()
-        return Response({'message': 'Recipe removed from collection successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({'message': 'Recipe removed from collection successfully'},
+                        status=status.HTTP_204_NO_CONTENT)
 
 
 # Comment View
@@ -348,7 +375,7 @@ class CommentView(GenericViewSet):
         queryset = self.get_queryset().filter(recipe=recipe)
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(queryset, many=True)
-        return Response({'message': 'Request Successful', 'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
     @extend_schema(
         request=CommentSerializer,
@@ -385,7 +412,7 @@ class CommentView(GenericViewSet):
     @extend_schema(
         request=CommentSerializer,
         responses={200: CommentSerializer},
-        description='Update a comment'
+        description='Update a comment View'
     )
     def update(self, request, recipe_pk, comment_pk, *args, **kwargs):
         recipe_pk = recipe_pk
@@ -482,7 +509,7 @@ class RecipeRatingView(GenericViewSet):
         if serializer.is_valid():
             if request.user.id == data['user']:
                 serializer.save()
-                return Response({'message': 'Rating created successfully', 'data': serializer.data},
+                return Response({'data': serializer.data},
                                 status=status.HTTP_201_CREATED)
             return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -514,7 +541,7 @@ class RecipeRatingView(GenericViewSet):
         serializer = rating_serializer(instance=rating, data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Vote type updated successfully', 'data': serializer.data},
+            return Response({'data': serializer.data},
                             status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
