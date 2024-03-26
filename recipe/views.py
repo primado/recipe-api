@@ -448,16 +448,10 @@ class RecipeRatingView(GenericViewSet):
         request=RecipeSerializer,
     )
     def list(self, request, *args, **kwargs):
-        recipe_pk = self.kwargs.get('recipe_pk')
+        recipe_pk = self.kwargs.get('recipe_pk')  # recipe_pk is a parameter
         upvote_count = self.get_queryset().filter(recipe=recipe_pk, vote_type=Rating.UPVOTE).count()
         downvote_count = self.get_queryset().filter(recipe=recipe_pk, vote_type=Rating.DOWNVOTE).count()
-
-        data = {
-            'upvote': upvote_count,
-            'downvote_count': downvote_count,
-        }
-        rating_serializer = self.get_serializer_class()
-        return Response({'message': 'Request (Ok) successful', 'upvote_count': upvote_count,
+        return Response({'upvote_count': upvote_count,
                          'downvote_count': downvote_count}, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -466,7 +460,7 @@ class RecipeRatingView(GenericViewSet):
         description='Rate a Recipe i.e. either upvote or downvote'
     )
     def create(self, request, *args, **kwargs):
-        recipe_pk = self.kwargs.get('recipe_pk')
+        recipe_pk = self.kwargs.get('recipe_pk')  # recipe_pk is a parameter
 
         data = {
             'user': request.user.id,
@@ -482,7 +476,7 @@ class RecipeRatingView(GenericViewSet):
         if serializer.is_valid():
             if request.user.id == data['user']:
                 serializer.save()
-                return Response({'message': 'Rating created successfully', 'data': serializer.data},
+                return Response({'data': serializer.data},
                                 status=status.HTTP_201_CREATED)
             return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -493,8 +487,8 @@ class RecipeRatingView(GenericViewSet):
         description='Update a Rating on a Recipe'
     )
     def update(self, request, *args, **kwargs):
-        recipe_pk = self.kwargs.get('recipe_pk')
-        rating_pk = self.kwargs.get('rating_pk')
+        recipe_pk = self.kwargs.get('recipe_pk')  # recipe_pk is a parameter
+        rating_pk = self.kwargs.get('rating_pk')  # rating_pk is a parameter
 
         try:
             rating = self.get_queryset().get(pk=rating_pk, recipe=recipe_pk, user=request.user)
@@ -524,8 +518,8 @@ class RecipeRatingView(GenericViewSet):
         description='Delete a Rating'
     )
     def destroy(self, request, *args, **kwargs):
-        recipe_pk = self.kwargs.get('recipe_pk')
-        rating_pk = self.kwargs.get('rating_pk')
+        recipe_pk = self.kwargs.get('recipe_pk')  # recipe_pk is a parameter
+        rating_pk = self.kwargs.get('rating_pk')  # rating_pk is a parameter
 
         try:
             rating = self.get_queryset().filter(pk=rating_pk, recipe=recipe_pk, user=request.user)
@@ -537,3 +531,84 @@ class RecipeRatingView(GenericViewSet):
             return Response({'message': 'Vote type deleted'}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({'message': 'Vote type does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Comment Rating
+
+class CommentRatingView(GenericViewSet):
+    queryset = CommentVote.objects.all()
+    serializer_class = CommentVoteSerializer
+
+    def get_serializer_class(self):
+        return self.serializer_class
+
+    def get_queryset(self):
+        return self.queryset
+
+    def list(self, request, *args, **kwargs):
+        comment_pk = self.kwargs.get('comment_pk')  # comment is a parameter
+        upvote_count = self.get_queryset().filter(pk=comment_pk, vote_type=CommentVote.UPVOTE).count()
+        downvote_count = self.get_queryset().filter(pk=comment_pk, vote_type=CommentVote.DOWNVOTE).count()
+
+        data = {
+            "upvote_count": upvote_count,
+            "downvote_count": downvote_count
+        }
+        return Response({'data': {'upvote_count': upvote_count,
+                                  'downvote_count': downvote_count}}, status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
+        comment_pk = self.kwargs.get('comment_pk')
+
+        data = {
+            "user": request.user.id,
+            "comment": comment_pk,
+            "vote_type": request.data.get('vote_type')
+        }
+
+        comment = Comment.objects.filter(pk=comment_pk)
+        if not comment.exists():
+            return Response({'message': "Comment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        comment_vote_serializer = self.get_serializer_class()
+        serializer = comment_vote_serializer(data=data)
+        if serializer.is_valid():
+            if request.user.id == data['user']:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({'message': 'User unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        comment_pk = self.kwargs.get('comment_pk')
+        comment_vote_pk = self.kwargs.get('comment_vote_pk')
+
+        try:
+            comment_vote = CommentVote.objects.get(pk=comment_vote_pk, comment=comment_pk)
+        except CommentVote.DoesNotExist:
+            return Response({'message': 'Comment does found'}, status=status.HTTP_404_NOT_FOUND)
+
+        vote_type = request.data.get('vote_type')
+        if vote_type not in [CommentVote.UPVOTE, CommentVote.DOWNVOTE]:
+            return Response({'message': 'Invalid vote type'}, status=status.HTTP_400_BAD_REQUEST)
+
+        comment_vote_serializer = self.get_serializer_class()
+        serializer = comment_vote_serializer(instance=comment_vote)
+        if serializer.is_valid():
+            if request.user.id == comment_vote.user.id:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({'User unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        comment_pk = self.kwargs.get('comment_pk')
+        comment_vote_pk = self.kwargs.get('comment_vote_pk')
+
+        comment_vote = CommentVote.objects.filter(pk=comment_vote_pk, comment=comment_pk)
+
+        if comment_vote.exists():
+            comment_vote.delete()
+            return Response({'message': 'Vote type deleted'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'vote type not found'}, status=status.HTTP_400_BAD_REQUEST)
