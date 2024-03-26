@@ -63,18 +63,22 @@ class RatingAdmin(admin.ModelAdmin):
 
 @admin.register(CommentVote)
 class CommentVoteAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'comment', ]
-    list_display_links = ['user', 'comment']
+    list_display = ['id', 'user', 'short_comment', 'upvote_count', 'downvote_count']
+    list_display_links = ['user', 'short_comment']
+    queryset = Comment
 
     def upvote_count(self, obj):
         return CommentVote.objects.filter(comment=obj.comment, vote_type='upvote').count()
-
     upvote_count.short_description = 'Upvote Count'
 
     def downvote_count(self, obj):
         return CommentVote.objects.filter(comment=obj.comment, vote_type='downvote').count()
-
     downvote_count.short_description = 'Downvote count'
+
+    def short_comment(self, obj):
+        return obj.comment.text[:30] + '' + '...'
+    short_comment.short_description = 'Comment'
+
 
 
 @admin.register(Tag)

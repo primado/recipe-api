@@ -70,6 +70,7 @@ class Comment(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.TimeField(auto_now=True)
+    parent_comment = models.ManyToManyField('self', blank=True)
 
     def __str__(self):
         return self.text
@@ -96,6 +97,7 @@ class Rating(models.Model):
     class Meta:
         unique_together = [['user_id', 'recipe_id']]
 
+
 class CommentVote(models.Model):
     UPVOTE = 'upvote'
     DOWNVOTE = 'downvote'
@@ -105,7 +107,7 @@ class CommentVote(models.Model):
     ]
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    vote_type = models.CharField(max_length=10, choices=VOTE_CHOICE)
+    vote_type = models.CharField(max_length=10, choices=VOTE_CHOICE, blank=True, null=True)
 
     class Meta:
         db_table = 'CommentVote'
