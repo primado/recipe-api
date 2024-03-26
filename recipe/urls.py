@@ -28,8 +28,6 @@ urlpatterns = [
     path('recipe/<int:recipe_pk>/rating/<int:rating_pk>', RecipeRatingView.as_view({'put': 'update',
                                                                                     'delete': 'destroy'})),
 
-    # # Retrieve URLS
-    # path('recipe/<int:recipe_pk>/')
 
 ]
 
