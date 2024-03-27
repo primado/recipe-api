@@ -23,7 +23,7 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 admin.site.site_title = "Recipe Management System Admin"
-admin.site.site_header = "Recipe Management System Adminstration"
+admin.site.site_header = "Recipe Management System Administration"
 admin.site.index_title = "Recipe Management System administration"
 
 
