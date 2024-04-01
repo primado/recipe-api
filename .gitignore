@@ -1,5 +1,5 @@
 recipeEnv/
-.env
+.env.dev
 db.sqlite3
 accounts/__pycache__/
 accounts/migrations/__pycache__/
