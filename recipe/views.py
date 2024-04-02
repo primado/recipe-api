@@ -156,6 +156,15 @@ class RecipeFeedView(APIView):
         responses={200: RecipeSerializer},
         description='Recipe Feed/ Public Recipes'
     )
+    # def get(self, request):
+    #     visibility = 'public'
+    #     queryset = self.queryset.filter(visibility=visibility)
+    #     if not queryset.exists():
+    #         return Response({'message': 'Public recipes not found'}, status=status.HTTP_400_BAD_REQUEST)
+    #
+    #     serializer = self.serializer_class(queryset, many=True)
+    #     return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
     def get(self, request):
         visibility = 'public'
         queryset = self.queryset.filter(visibility=visibility)
@@ -163,7 +172,17 @@ class RecipeFeedView(APIView):
             return Response({'message': 'Public recipes not found'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(queryset, many=True)
-        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+        data = serializer.data
+
+        # Add image URLs to each recipe data
+        for recipe_data in data:
+            recipe = Recipe.objects.get(pk=recipe_data['id'])
+            if recipe.recipe_image:  # Assuming 'recipe_image' is the image field
+                recipe_data['image_url'] = recipe.recipe_image.url
+            else:
+                recipe_data['image_url'] = None
+
+        return Response({'data': data}, status=status.HTTP_200_OK)
 
 
 # show private recipes to Recipes author/user

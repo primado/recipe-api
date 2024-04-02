@@ -5,9 +5,18 @@ from .models import *
 # Create your serializers here
 
 class RecipeSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    def get_image_url(self, obj):
+        if obj.recipe_image:
+            return obj.recipe_image.url
+        else:
+            return None
+
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = ['id', 'title', 'description', 'image_url', 'visibility', 'difficulty_level', 'ingredient',
+                  'cooking_time', 'instruction']
 
 
 class RecipeCollectionSerializer(serializers.ModelSerializer):

@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   web:
+    restart: always
     container_name: RecipeAPI
     build: ./
     command: python manage.py runserver 0.0.0.0:8000
@@ -11,3 +12,18 @@ services:
       - 8000:8000
     env_file:
       - ./.env.dev
+    environment:
+      DEBUG: 'true'
+      command: /usr/local/bin/gunicorn base.wsgi:application -w 2 -b :8000
+
+
+  nginx:
+      restart: always
+      build: ./nginx
+      volumes:
+        - ./static:/usr/src/app/static
+        - ./uploads:/usr/src/app/uploads/
+      ports:
+        - 1337:80
+      depends_on:
+        - web
