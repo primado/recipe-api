@@ -149,7 +149,7 @@ class RecipeView(GenericViewSet):
 class RecipeFeedView(APIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=RecipeSerializer,
