@@ -74,6 +74,7 @@ class RecipeView(GenericViewSet):
             'ingredient': request.data.get('ingredient'),
             'instruction': request.data.get('instruction'),
             'cooking_time': request.data.get('cooking_time'),
+            'time_choice': request.data.get('time_choice'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
             'recipe_image': request.data.get('recipe_image'),
@@ -110,6 +111,7 @@ class RecipeView(GenericViewSet):
             'ingredient': request.data.get('ingredient'),
             'instruction': request.data.get('instruction'),
             'cooking_time': request.data.get('cooking_time'),
+            'time_choice': request.data.get('time_choice'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
             'recipe_image': request.data.get('recipe_image'),
@@ -146,7 +148,7 @@ class RecipeView(GenericViewSet):
     tags=['Recipe Feed View'],
     description='Public Recipe Feeds'
 )
-class RecipeFeedView(APIView):
+class RecipeFeedView(GenericViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     # permission_classes = [IsAuthenticated]
@@ -156,7 +158,7 @@ class RecipeFeedView(APIView):
         responses={200: RecipeSerializer},
         description='Recipe Feed/ Public Recipes'
     )
-    def get(self, request):
+    def list(self, request):
         visibility = 'public'
         queryset = self.queryset.filter(visibility=visibility)
         if not queryset.exists():
@@ -164,6 +166,19 @@ class RecipeFeedView(APIView):
 
         serializer = self.serializer_class(queryset, many=True)
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+
+        try:
+            queryset = Recipe.objects.get(pk=recipe_pk)
+        except Recipe.DoesNotExist:
+            return Response({'message': 'Recipe does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(queryset, many=True)
+        if queryset.visibility == 'public':
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # show private recipes to Recipes author/user

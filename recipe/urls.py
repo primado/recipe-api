@@ -11,7 +11,8 @@ router.register(r'collection', RecipeCollectionView)
 urlpatterns = [
     path('recipe',RecipeView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>', RecipeView.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
-    path('feed/', RecipeFeedView.as_view(), name="feed"),
+    path('feed/', RecipeFeedView.as_view({'get': 'list'}), name="feed"),
+    path('feed/<int:recipe_pk>', RecipeFeedView.as_view({'get': 'retrieve'})),
     path('private-recipes/', UserPrivateRecipes.as_view({'get': 'user_private_recipes'}), name="private-recipes"),
     path('collection/<int:pk>/add-recipe', RecipeCollectionView.as_view({'post': 'add_recipe'}),
          name='add_recipe_collection'),

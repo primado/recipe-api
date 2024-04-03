@@ -9,7 +9,14 @@ class Recipe(models.Model):
     description = models.CharField(max_length=255, blank=True)
     ingredient = models.TextField(blank=True)
     instruction = models.TextField(blank=True)
-    cooking_time = models.IntegerField(blank=True)
+    cooking_time = models.PositiveIntegerField(blank=True)
+    HOUR = 'hour'
+    MINUTE = 'minute'
+    TIME_CHOICES = (
+        (HOUR, 'hour'),
+        (MINUTE, 'minute')
+    )
+    time_duration_unit = models.CharField(max_length=10, choices=TIME_CHOICES, default=MINUTE)
 
     DIFFICULTY_LEVEL_CHOICES = [
         ("easy", "Easy"),
