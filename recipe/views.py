@@ -629,7 +629,7 @@ class CommentRatingView(GenericViewSet):
             return Response({'User unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
         comment_pk = self.kwargs.get('comment_pk')
         comment_vote_pk = self.kwargs.get('comment_vote_pk')
 
