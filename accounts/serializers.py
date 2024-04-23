@@ -23,4 +23,9 @@ class DeleteAccountSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UsernameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username']
+
 

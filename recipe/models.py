@@ -10,6 +10,15 @@ class Recipe(models.Model):
     ingredient = models.TextField(blank=True)
     instruction = models.TextField(blank=True)
     cooking_time = models.IntegerField(blank=True)
+    # rating = models.IntegerField(blank=True)
+    MINUTE = 'minute'
+    HOUR = 'hour'
+    TIME_CHOICES = (
+        (MINUTE, 'minute'),
+        (HOUR, 'hour'),
+
+    )
+    time_duration_unit = models.CharField(max_length=10, choices=TIME_CHOICES, default=MINUTE)
 
     DIFFICULTY_LEVEL_CHOICES = [
         ("easy", "Easy"),
@@ -47,7 +56,7 @@ class RecipeCollection(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     recipe = models.ManyToManyField(Recipe, through="RecipeCollectionRecipe", related_name='collections')
     created_at = models.DateTimeField(auto_now_add=True)
-    last_updated = models.DateTimeField(auto_now=True)
+    last_updated = models.DateField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -69,7 +78,7 @@ class Comment(models.Model):
     text = models.TextField()
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    created_at = models.TimeField(auto_now=True)
+    created_at = models.DateField(auto_now=True)
     parent_comment = models.ManyToManyField('self', blank=True)
 
     def __str__(self):
