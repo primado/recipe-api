@@ -10,6 +10,7 @@ from .serializers import *
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .models import *
+from accounts.serializers import UsernameSerializer
 
 
 # Create your views here.
@@ -146,17 +147,17 @@ class RecipeView(GenericViewSet):
     tags=['Recipe Feed View'],
     description='Public Recipe Feeds'
 )
-class RecipeFeedView(APIView):
+class RecipeFeedView(GenericViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = RecipeReadSerializer
     # permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=RecipeSerializer,
+        request=RecipeReadSerializer,
         responses={200: RecipeSerializer},
         description='Recipe Feed/ Public Recipes'
     )
-    def get(self, request):
+    def list(self, request):
         visibility = 'public'
         queryset = self.queryset.filter(visibility=visibility)
         if not queryset.exists():
@@ -164,6 +165,24 @@ class RecipeFeedView(APIView):
 
         serializer = self.serializer_class(queryset, many=True)
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=RecipeReadSerializer,
+        responses={200: RecipeSerializer},
+        description='Detail view for Public Recipes'
+    )
+    def retrieve(self, request, *args, **kwargs):
+        recipe_pk = self.kwargs.get('recipe_pk')
+
+        try:
+            queryset = self.queryset.get(pk=recipe_pk)
+        except Recipe.DoesNotExist:
+            return Response({'message': 'Recipe does not'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(queryset, many=False)
+        if queryset.visibility == 'public':
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # show private recipes to Recipes author/user
@@ -561,7 +580,10 @@ class RecipeRatingView(GenericViewSet):
 
 
 # Comment Rating
-
+@extend_schema(
+    tags=['Comments'],
+    description='Recipe Comments'
+)
 class CommentRatingView(GenericViewSet):
     queryset = CommentVote.objects.all()
     serializer_class = CommentVoteSerializer
@@ -639,3 +661,20 @@ class CommentRatingView(GenericViewSet):
             comment_vote.delete()
             return Response({'message': 'Vote type deleted'}, status=status.HTTP_204_NO_CONTENT)
         return Response({'vote type not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+@extend_schema(
+    tags=['Check username'],
+    description='Check whether a username is available.'
+)
+class CheckUserName(GenericViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UsernameSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        username = self.kwargs.get('username')
+        user = CustomUser.objects.get(username=username)
+
+        if (user):
+            return Response({'message': 'User already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'message': 'Username available'}, status=status.HTTP_200_OK)

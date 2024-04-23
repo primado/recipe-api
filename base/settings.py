@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
+
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -56,6 +57,8 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
     'corsheaders',
     'drf_spectacular',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
@@ -115,13 +118,21 @@ REST_AUTH = {
     'PASSWORD_RESET_SERIALIZER': 'dj_rest_auth.serializers.PasswordResetSerializer',
     'PASSWORD_RESET_CONFIRM_SERIALIZER': 'dj_rest_auth.serializers.PasswordResetConfirmSerializer',
     'PASSWORD_CHANGE_SERIALIZER': 'dj_rest_auth.serializers.PasswordChangeSerializer',
+
+    'JWT_SERIALIZER': 'dj_rest_auth.serializers.JWTCookieSerializer',  # Use JWT with cookies
+    'JWT_AUTH_COOKIE': 'access_token',  # Name of the cookie to store JWT access token
+    'JWT_AUTH_REFRESH_COOKIE': 'refresh_token',  # Name of the cookie to store JWT refresh token
+    'TOKEN_MODEL': 'dj_rest_auth.models.TokenModel',  # Use dj-rest-auth's Token model
+    'TOKEN_SERIALIZER': 'dj_rest_auth.serializers.TokenSerializer',  # Use dj-rest-auth's Token serializer
+    'TOKEN_DELETE_BLACKLIST': True,  # Enable token blacklist
+    'TOKEN_USER': 'accounts.CustomUser',  # User model to associate with tokens
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60 * 12),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=10),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "SIGNING_KEY": os.environ.get('SECRET_KEY'),  # generate a key and replace me
     "ALGORITHM": "HS512",
