@@ -1,9 +1,11 @@
 from django.shortcuts import render
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import  ModelViewSet
 from rest_framework.views import APIView
 from accounts.models import CustomUser
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.viewsets import GenericViewSet
 from drf_spectacular.utils import extend_schema
 # from dj_rest_auth.views import LoginView, LogoutView, UserDetailsView , PasswordChangeView, PasswordResetConfirmView, PasswordResetView
 from .serializers import *
@@ -11,25 +13,59 @@ from .serializers import *
 # Create your views here.
 
 
-# class UserProfileUpdateView(ModelViewSet):
-#     queryset = CustomUser.objects.all()
-#     serializer_class = UpdateCustomUserSerializer
-#     lookup_field = 'username'
+class UserProfileUpdateView(GenericViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UpdateCustomUserSerializer
+    lookup_field = 'username'
+    permission_classes = [IsAuthenticated]
 
-#     def get_object(self):
-#         return self.request.user        
+    def get_object(self):
+        return self.request.user
 
-#     @extend_schema(
-#             tags=['Update User Account']
-#     )
-#     def partial_update(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         serializer = self.get_serializer(instance, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def list(self, request, *args, **kwargs):
+        user = request.user.id
+        queryset = CustomUser.objects.filter(id=user)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+            tags=['Update User Account'],
+            responses = {200: UpdateCustomUserSerializer},
+            description = 'Update User Account Endpoint'
+    )
+    def partial_update(self, request, *args, **kwargs):
+        username = self.kwargs.get('username')
+        try:
+            user_instance = CustomUser.objects.get(username=username, id=request.user.id)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        update_data = {
+            'id': user_instance.id,
+            'username': request.data.get('username'),
+            'first_name': request.data.get('first_name'),
+            'last_name': request.data.get('last_name'),
+            'email': request.data.get('email'),
+            'bio': request.data.get('bio'),
+            'profile_picture': request.data.get('profile_picture'),
+            'headline': request.data.get('headline'),
+            'instagram': request.data.get('instagram'),
+            'facebook': request.data.get('facebook'),
+            'website': request.data.get('website'),
+        }
+
+        serializer = self.get_serializer(data=update_data, instance=user_instance, partial=True)
+        if serializer.is_valid():
+            if request.user.id == user_instance.id:
+                serializer.save()
+                return Response({'detail': 'User updated successfully', 'data': serializer.data},
+                                content_type='multipart/form-data', status=status.HTTP_200_OK)
+            return Response({'detail': 'user forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
         
 
 

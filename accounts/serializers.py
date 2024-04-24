@@ -15,7 +15,8 @@ class UpdateCustomUserSerializer(serializers.ModelSerializer):
 
     class Meta: 
         model = CustomUser
-        fields = ('id', 'username', 'bio', 'headline', 'instagram', 'facebook', 'website')
+        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'bio', 'profile_picture', 'headline',
+                  'instagram', 'facebook', 'website')
 
 class DeleteAccountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,5 +28,8 @@ class UsernameSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'username']
+
+
+
 
 
