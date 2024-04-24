@@ -10,6 +10,7 @@ class CustomUser(AbstractUser):
     instagram = models.URLField('Instagram Profile Link', blank=True)
     facebook = models.URLField("Facebook Profile Link", blank=True)
     website = models.URLField('Website Link', blank=True)
+    profile_picture = models.ImageField(blank=True, null=True)
 
     def __str__(self):
         return self.username
