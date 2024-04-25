@@ -30,6 +30,10 @@ class UsernameSerializer(serializers.ModelSerializer):
         fields = ['id', 'username']
 
 
+class ProfilePictureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'profile_picture']
 
 
 

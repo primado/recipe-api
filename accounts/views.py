@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import  ModelViewSet
@@ -13,6 +14,10 @@ from .serializers import *
 # Create your views here.
 
 
+@extend_schema(
+    tags=['User Profile View '],
+    description='Profile View',
+)
 class UserProfileUpdateView(GenericViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UpdateCustomUserSerializer
@@ -22,7 +27,11 @@ class UserProfileUpdateView(GenericViewSet):
     def get_object(self):
         return self.request.user
 
-
+    @extend_schema(
+        tags=['Profile List'],
+        description='List Profile details',
+        responses={200: UpdateCustomUserSerializer}
+    )
     def list(self, request, *args, **kwargs):
         user = request.user.id
         queryset = CustomUser.objects.filter(id=user)
@@ -89,4 +98,69 @@ class DeleteAccount(ModelViewSet):
             return Response({'message': 'Your account has been deleted.'}, status=status.HTTP_204_NO_CONTENT)
         except CustomUser.DoesNotExist:
             return Response({'message': 'Account does not exist'}, status=status.HTTP_204_NO_CONTENT)
-        
+
+
+@extend_schema(
+    tags=['Profile Picture View'],
+    description='Profile Picture View'
+)
+class ProfilePictureView(GenericViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = ProfilePictureSerializer
+    permission_classes = [IsAuthenticated]
+
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.queryset.filter(id=request.user.id)
+        serializer = ProfilePictureSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    # def create(self, request, *args, **kwargs):
+    #     picture_data = {
+    #         "id": request.user.id,
+    #         "profile_picture": request.data['profile_picture'],
+    #     }
+    #     serializer = ProfilePictureSerializer(data=picture_data)
+    #     if serializer.is_valid():
+    #         if request.user.id == picture_data['id']:
+    #             serializer.save()
+    #             return Response(serializer.data, content_type='multipart/form-data', status=status.HTTP_201_CREATED)
+    #         return Response({'detail': 'User authorized'}, status=status.HTTP_401_UNAUTHORIZED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user_instance = CustomUser.objects.get(id=request.user.id)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        picture_data = {
+            "id": request.user.id,
+            "profile_picture": request.data.get('profile_picture'),
+        }
+        serializer = ProfilePictureSerializer(data=picture_data, partial=True, instance=user_instance)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, content_type='multipart/form-data', status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user_instance = CustomUser.objects.get(id=request.user.id)
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            picture = CustomUser.objects.get(id=request.user.id, profile_picture=request.data['profile_picture'])
+        except ObjectDoesNotExist:
+            return Response({'detail': 'Picture does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        picture.delete()
+        return Response({'detail': 'Profile Picture deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+
