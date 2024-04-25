@@ -32,6 +32,10 @@ urlpatterns = [
     path('<str:username>/profile-update', UserProfileUpdateView.as_view({'patch': 'partial_update'}),
          name='user-details-patch'),
 
+    # Profile Picture
+    path('profile-picture', ProfilePictureView.as_view({'get': 'list', 'put': 'update', 'delete': 'destroy'}),
+         name='profile')
+
 ]
 
 
