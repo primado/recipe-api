@@ -44,9 +44,9 @@ class UserProfileUpdateView(GenericViewSet):
             description = 'Update User Account Endpoint'
     )
     def partial_update(self, request, *args, **kwargs):
-        username = self.kwargs.get('username')
+
         try:
-            user_instance = CustomUser.objects.get(username=username, id=request.user.id)
+            user_instance = CustomUser.objects.get(id=request.user.id)
         except CustomUser.DoesNotExist:
             return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -57,7 +57,6 @@ class UserProfileUpdateView(GenericViewSet):
             'last_name': request.data.get('last_name'),
             'email': request.data.get('email'),
             'bio': request.data.get('bio'),
-            'profile_picture': request.data.get('profile_picture'),
             'headline': request.data.get('headline'),
             'instagram': request.data.get('instagram'),
             'facebook': request.data.get('facebook'),
@@ -154,7 +153,7 @@ class ProfilePictureView(GenericViewSet):
             return Response({'detail': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            picture = CustomUser.objects.get(id=request.user.id, profile_picture=request.data['profile_picture'])
+            picture = CustomUser.objects.get(profile_picture=request.user.data.get("profile_picture"))
         except ObjectDoesNotExist:
             return Response({'detail': 'Picture does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
