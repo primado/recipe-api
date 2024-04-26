@@ -29,7 +29,7 @@ urlpatterns = [
     path('password/change/', PasswordChangeView.as_view(), name='rest_password_change'),
 
     path('user-profile', UserProfileUpdateView.as_view({'get': 'list'}), name='profile-list'),
-    path('<str:username>/profile-update', UserProfileUpdateView.as_view({'patch': 'partial_update'}),
+    path('profile-update', UserProfileUpdateView.as_view({'patch': 'partial_update'}),
          name='user-details-patch'),
 
     # Profile Picture
