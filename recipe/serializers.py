@@ -6,6 +6,7 @@ from accounts.serializers import CustomUserSerializers
 # Create your serializers here
 
 class RecipeSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializers(read_only=True)
     class Meta:
         model = Recipe
         fields = '__all__'
