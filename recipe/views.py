@@ -31,10 +31,19 @@ class RecipeView(GenericViewSet):
         description='Recipe List View',
     )
     def list(self, request):
-        user = request.user
-        queryset = self.queryset.filter(user=user)
+        queryset = self.queryset.all(user=request.user)
         serializer = self.get_serializer(queryset, many=True)
         return Response({'message': 'Request Ok successful', 'data': serializer.data}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=RecipeSerializer,
+        responses={200: RecipeSerializer},
+        description="Public Recipe List View"
+    )
+    def publicRecipe(self, request):
+        recipe = Recipe.objects.filter(visibility='public').all()
+        serializer = RecipeSerializer(recipe, many=True)
+        return Response(serializer.data, content_type='application/json', status=status.HTTP_200_OK)
 
     @extend_schema(
         request=RecipeSerializer,
