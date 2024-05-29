@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .models import *
 from accounts.serializers import UsernameSerializer
-
+import cloudinary.uploader
 
 # Create your views here.
 
@@ -58,16 +58,16 @@ class RecipeView(GenericViewSet):
             return Response({'detail': 'Recipe not found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.get_serializer(recipe)
+        serializer_data = [serializer.data]
         if request.user == recipe.user:
-            return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+            return Response(serializer_data, status=status.HTTP_200_OK)
 
-        elif request.user != recipe.user_id and recipe.visibility == 'private':
+        elif request.user != recipe.user.id and recipe.visibility == 'private':
             return Response({'message': 'You do not have permission to access this private recipe.'},
                             status=status.HTTP_403_FORBIDDEN)
 
         elif recipe.visibility == 'public':
-            return Response({'data': serializer.data},
-                            status=status.HTTP_200_OK)
+            return Response(serializer_data, status=status.HTTP_200_OK)
         # Handle unexpected cases
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -83,23 +83,31 @@ class RecipeView(GenericViewSet):
             'description': request.data.get('description'),
             'ingredient': request.data.get('ingredient'),
             'instruction': request.data.get('instruction'),
-            'cooking_time': request.data.get('cooking_time'),
+            'cooking_time_duration': request.data.get('cooking_time_duration'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
             'recipe_image': request.data.get('recipe_image'),
-            'user': request.user.id
         }
 
-        serializer = self.get_serializer(data=data)
+        serializer = RecipeSerializer(data=data)
 
         if serializer.is_valid():
-            if request.user.id == data['user']:
-                serializer.save()
-                return Response({'message': 'Recipe created successfully', 'data': serializer.data},
+            serializer.save(user=request.user)
+            return Response({'message': 'Recipe created successfully', 'data': serializer.data},
                                 content_type='multipart/form-data',
                                 status=status.HTTP_201_CREATED)
-            return Response({'message': 'User Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def upload_to_cloudinary(image_file):
+        try:
+            upload_result = cloudinary.uploader.upload(image_file)
+            uploaded_image_url = upload_result.get('secure_url')
+            return uploaded_image_url
+
+        except Exception as e:
+            print(f"Error uploading image to cloudinary: {e}")
+            return None
 
     @extend_schema(
         request=RecipeSerializer,
@@ -113,18 +121,28 @@ class RecipeView(GenericViewSet):
         if not recipe_instance:
             return Response({'message': 'Recipe does doest not exist'}, status=status.HTTP_404_NOT_FOUND)
 
+        serializer = self.get_serializer(recipe_instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        if 'recipe_image' in request.data:
+            uploaded_image = request.data['recipe_image']
+            uploaded_image_url = self.upload_to_cloudinary(uploaded_image)
+            serializer.validated_data['recipe_image'] = uploaded_image_url
+
         data = {
-            'id': recipe_pk,
             'title': request.data.get('title'),
             'description': request.data.get('description'),
             'ingredient': request.data.get('ingredient'),
             'instruction': request.data.get('instruction'),
-            'cooking_time': request.data.get('cooking_time'),
+            'cooking_time_duration': request.data.get('cooking_time_duration'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
-            'recipe_image': request.data.get('recipe_image'),
             'user': request.user.id
         }
+
+        # if 'recipe_image' in request.data or recipe_instance.recipe_image:
+        #     data['recipe_image'] = uploaded_image_url if 'recipe_image' in request.data else (
+        #         recipe_instance.recipe_image)
 
         serializer = self.get_serializer(instance=recipe_instance, data=data, partial=True)
         if serializer.is_valid():
@@ -168,12 +186,12 @@ class RecipeFeedView(GenericViewSet):
     )
     def list(self, request):
         visibility = 'public'
-        queryset = self.queryset.filter(visibility=visibility)
+        queryset = self.queryset.filter(visibility=visibility)[:4]
         if not queryset.exists():
             return Response({'message': 'Public recipes not found'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.serializer_class(queryset, many=True)
-        return Response({'data': serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         request=RecipeReadSerializer,
@@ -189,8 +207,9 @@ class RecipeFeedView(GenericViewSet):
             return Response({'message': 'Recipe does not'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.serializer_class(queryset, many=False)
+        serializer_data = [serializer.data]
         if queryset.visibility == 'public':
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
