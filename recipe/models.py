@@ -6,7 +6,7 @@ from accounts.models import CustomUser
 
 class Recipe(models.Model):
     title = models.CharField(max_length=150)
-    description = models.CharField(max_length=255, blank=True)
+    description = models.CharField(max_length=300, blank=True)
     ingredient = models.TextField(blank=True)
     instruction = models.TextField(blank=True)
     cooking_time_duration = models.CharField(max_length=15, blank=True, null=True)
@@ -38,7 +38,7 @@ class Recipe(models.Model):
         managed = True
         verbose_name = 'recipe'
         verbose_name_plural = 'recipes'
-        ordering = ['-last_updated']
+        ordering = ['-created_at']
 
 
 class RecipeCollection(models.Model):
