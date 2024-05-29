@@ -36,7 +36,8 @@ class UserProfileUpdateView(GenericViewSet):
         user = request.user.id
         queryset = CustomUser.objects.filter(id=user)
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer_data = serializer.data
+        return Response(serializer_data, status=status.HTTP_200_OK)
 
     @extend_schema(
             tags=['Update User Account'],
@@ -147,18 +148,16 @@ class ProfilePictureView(GenericViewSet):
 
 
     def destroy(self, request, *args, **kwargs):
-        try:
-            user_instance = CustomUser.objects.get(id=request.user.id)
-        except CustomUser.DoesNotExist:
-            return Response({'detail': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+       user = request.user
+       if not user.profile_picture:
+           return Response({'detail': 'User does not have a profile picture'}, status=status.HTTP_404_NOT_FOUND)
 
-        try:
-            picture = CustomUser.objects.get(profile_picture=request.user.data.get("profile_picture"))
-        except ObjectDoesNotExist:
-            return Response({'detail': 'Picture does not exist'}, status=status.HTTP_404_NOT_FOUND)
+       user.profile_picture.delete()
 
-        picture.delete()
-        return Response({'detail': 'Profile Picture deleted'}, status=status.HTTP_204_NO_CONTENT)
+       user.profile.delete = None
+       user.save()
+
+       return Response({'detail': 'Profile picture deleted'}, status=status.HTTP_200_OK)
 
 
 
