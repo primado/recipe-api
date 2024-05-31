@@ -47,7 +47,7 @@ class RecipeCollection(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     recipe = models.ManyToManyField(Recipe, through="RecipeCollectionRecipe", related_name='collections')
     created_at = models.DateTimeField(auto_now_add=True)
-    last_updated = models.DateField(auto_now=True)
+    last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name

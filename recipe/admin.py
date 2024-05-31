@@ -6,14 +6,22 @@ from .models import *
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'title', 'user', 'description', 'difficulty_level', 'visibility']
+    list_display = ['id', 'title', 'user', 'sht_description', 'difficulty_level', 'visibility', 'last_updated']
     search_fields = ['description', 'ingredient']
     list_display_links = ['title', 'user']
 
+    def sht_description(self, obj):
+        return obj.description[:60] + "..."
+    sht_description.short_description = 'Description'
 
 @admin.register(RecipeCollection)
 class RecipeCollection(admin.ModelAdmin):
-    list_display = ['id', 'name', 'user', 'description']
+    list_display = ['id', 'name', 'user', 'sht_description', 'last_updated']
+    list_display_links = ['name', 'user']
+
+    def sht_description(self, obj):
+        return obj.description[:100] + "..."
+    sht_description.short_description = 'Description'
 
 
 @admin.register(RecipeCollectionRecipe)
@@ -25,6 +33,8 @@ class RecipeCollectionRecipe(admin.ModelAdmin):
         return obj.recipe.user
 
     recipe_user.shor_description = 'Recipe User'
+
+
 
     def recipe_id(self, obj):
         return obj.recipe.id
