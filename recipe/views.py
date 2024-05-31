@@ -13,6 +13,7 @@ from .models import *
 from accounts.serializers import UsernameSerializer
 import cloudinary.uploader
 
+
 # Create your views here.
 
 # Recipe CRUD View
@@ -31,7 +32,7 @@ class RecipeView(GenericViewSet):
         description='Recipe List View',
     )
     def list(self, request):
-        queryset = self.queryset.all(user=request.user)
+        queryset = Recipe.objects.filter(user=request.user)
         serializer = self.get_serializer(queryset, many=True)
         return Response({'message': 'Request Ok successful', 'data': serializer.data}, status=status.HTTP_200_OK)
 
@@ -246,7 +247,7 @@ class UserPrivateRecipes(GenericViewSet):
 class RecipeCollectionView(ModelViewSet):
     queryset = RecipeCollection.objects.all()
     serializer_class = RecipeCollectionSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    # parser_classes = [MultiPartParser, FormParser]
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -284,6 +285,19 @@ class RecipeCollectionView(ModelViewSet):
                                 status=status.HTTP_201_CREATED)
             return Response({'message': 'User Unauthorized'}, content_type='application/json',
                             status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def create_collection(self, request, *args, **kwargs):
+        data = {
+            'name': request.data.get('name'),
+            'description': request.data.get('description'),
+            'recipe': request.data.get('recipe'),
+            'user': request.user.id
+        }
+        serializer = RecipeCollectionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(

@@ -21,6 +21,8 @@ urlpatterns = [
     path('collection/<int:pk>/<int:recipe_pk>/delete', RecipeCollectionView.as_view({'delete': 'remove_recipe'}),
          name='remove-recipe-collection'),
 
+    path('create-collection', RecipeCollectionView.as_view({'post': 'create_collection'}), name='create_collection'),
+
     path('recipe/<int:recipe_pk>/comment', CommentView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>/comment/<int:comment_pk>',
          CommentView.as_view({'put': 'update', 'delete': 'destroy'})),
