@@ -20,6 +20,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeCollectionSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializers(read_only=True)
     class Meta:
         model = RecipeCollection
         fields = '__all__'

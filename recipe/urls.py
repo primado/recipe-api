@@ -5,7 +5,7 @@ from . views import *
 
 router = DefaultRouter()
 # router.register(r'recipe', RecipeView)
-router.register(r'collection', RecipeCollectionView)
+# router.register(r'collection', RecipeCollectionView)
 
 
 urlpatterns = [
@@ -18,10 +18,14 @@ urlpatterns = [
     path('collection/<int:pk>/add-recipe', RecipeCollectionView.as_view({'post': 'add_recipe'}),
          name='add_recipe_collection'),
 
-    path('collection/<int:pk>/<int:recipe_pk>/delete', RecipeCollectionView.as_view({'delete': 'remove_recipe'}),
-         name='remove-recipe-collection'),
+    path('collection/<int:collection_pk>', RecipeCollectionView.as_view({'delete': 'destroy',  'put': 'update'}),
+         name="collection"),
 
-    path('create-collection', RecipeCollectionView.as_view({'post': 'create_collection'}), name='create_collection'),
+    # path('collection/<int:collection_pk>/<int:recipe_pk>',
+    #      RecipeCollectionView.as_view({'delete': 'remove_recipe'}), name='remove-recipe-collection'),
+
+    path('collection', RecipeCollectionView.as_view({'post': 'create_collection', 'get': 'list'}),
+         name='create_collection'),
 
     path('recipe/<int:recipe_pk>/comment', CommentView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>/comment/<int:comment_pk>',
@@ -30,7 +34,6 @@ urlpatterns = [
     # RECIPE RATING
     path('recipe/<int:recipe_pk>/rating', RecipeRatingView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>/rating/<int:rating_pk>', RecipeRatingView.as_view({'put': 'update',
-                                                                                   
                                                                                     'delete': 'destroy'})),
 
     # Comment Rating URLS
