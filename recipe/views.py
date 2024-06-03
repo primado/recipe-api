@@ -256,70 +256,72 @@ class RecipeCollectionView(ModelViewSet):
         description='Collection List View'
     )
     def list(self, request):
-        user = request.user
-        queryset = self.queryset.filter(user=user)
+
+        queryset = self.queryset.filter(user=request.user)
         if not self.queryset.exists():
-            return Response({'message': 'Recipe collection empty.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Recipe collection empty.'}, status=status.HTTP_204_NO_CONTENT)
 
         serializer = self.get_serializer(queryset, many=True)
         return Response({'data': serializer.data}, content_type='application/json',
                         status=status.HTTP_200_OK)
 
+    # @extend_schema(
+    #     request=RecipeCollectionSerializer,
+    #     responses={201: RecipeCollectionSerializer},
+    #     description='Create Collection'
+    # )
+    # def create(self, request):
+    #     data = {
+    #         'name': request.data.get('name'),
+    #         'description': request.data.get('description'),
+    #         'user': request.user.id
+    #     }
+    #
+    #     serializer = self.get_serializer(data=data)
+    #     if serializer.is_valid():
+    #         if request.user.id == data['user']:
+    #             serializer.save()
+    #             return Response({'message': 'Recipe collection created successfully', 'data': serializer.data},
+    #                             status=status.HTTP_201_CREATED)
+    #         return Response({'message': 'User Unauthorized'}, content_type='application/json',
+    #                         status=status.HTTP_401_UNAUTHORIZED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @extend_schema(
-        request=RecipeSerializer,
-        responses={201: RecipeSerializer},
-        description='Create Collection'
+        request=RecipeCollectionSerializer,
+        responses={201: RecipeCollectionSerializer},
+        description='Create Collection 2nd'
     )
-    def create(self, request):
-        data = {
-            'name': request.data.get('name'),
-            'description': request.data.get('description'),
-            'user': request.user.id
-        }
-
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            if request.user.id == data['user']:
-                serializer.save()
-                return Response({'message': 'Recipe collection created successfully', 'data': serializer.data},
-                                status=status.HTTP_201_CREATED)
-            return Response({'message': 'User Unauthorized'}, content_type='application/json',
-                            status=status.HTTP_401_UNAUTHORIZED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     def create_collection(self, request, *args, **kwargs):
         data = {
             'name': request.data.get('name'),
             'description': request.data.get('description'),
-            'recipe': request.data.get('recipe'),
-            'user': request.user.id
+            # 'user': request.user.id
         }
         serializer = RecipeCollectionSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
-        request=RecipeSerializer,
-        responses={200: RecipeSerializer},
+        request=RecipeCollectionSerializer,
+        responses={200: RecipeCollectionSerializer},
         description='Update Collection'
     )
-    def update(self, request, pk, *args, **kwargs):
-        collection_instance = RecipeCollection.objects.filter(pk=pk, user=request.user)
+    def update(self, request, collection_pk, *args, **kwargs):
+        collection_instance = RecipeCollection.objects.get(pk=collection_pk)
         data = {
             'name': request.data.get('name'),
             'description': request.data.get('description'),
-            'user': request.user.id
         }
-
         if not collection_instance:
             return Response({'message': 'Recipe Collection does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.serializer_class(instance=collection_instance, data=data)
         if serializer.is_valid():
-            if request.user.id == data['user']:
-                serializer.save()
+            if collection_instance.user == request.user:
+                serializer.save(user=request.user)
                 return Response({'message': 'Recipe collection updated successfully', 'data': serializer.data},
                                 status=status.HTTP_200_OK)
             return Response({'message': 'User unauthorized'}, content_type='application/json',
@@ -330,19 +332,19 @@ class RecipeCollectionView(ModelViewSet):
         request=RecipeCollectionSerializer,
         description='Delete Collection',
     )
-    def destroy(self, request, pk, *args, **kwargs):
-        collection_instance = RecipeCollection.objects.filter(pk=pk, user=request.user)
-        if not collection_instance:
+    def destroy(self, request, collection_pk, *args, **kwargs):
+        collection_pk = self.kwargs.get('collection_pk')
+        try:
+            collections_instance = RecipeCollection.objects.get(pk=collection_pk)
+        except RecipeCollection.DoesNotExist:
             return Response({'message': 'Recipe Collection does not exist.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user_id_from_request = collection_instance.get(user=request.user)
-        if request.user.id != user_id_from_request:
-            return Response({'message': 'User unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
-        collection_instance.delete()
-        return Response({'message': 'Recipe collection deleted'}, status=status.HTTP_204_NO_CONTENT)
+        if collections_instance.user != request.user:
+            return Response({'message': 'User does not have permission to delete collection'},
+                            status=status.HTTP_403_FORBIDDEN)
+        collections_instance.delete()
+        return Response({"message": "Recipe collection deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
     # Views for adding and deleting a recipe to and from collection upon a request
-
     @extend_schema(
         tags=['Add Recipe to Collection Inline'],
         description='Add Recipe to Collection directly',
@@ -387,7 +389,7 @@ class RecipeCollectionView(ModelViewSet):
         request=RecipeSerializer,
     )
     def remove_recipe(self, request, *args, **kwargs):
-        collection_pk = kwargs.get('pk')
+        collection_pk = self.kwargs.get('pk')
         recipe_pk = self.kwargs.get('recipe_pk')
         try:
             collection = self.queryset.get(pk=collection_pk, user=request.user)
