@@ -138,7 +138,6 @@ class RecipeView(GenericViewSet):
             'cooking_time_duration': request.data.get('cooking_time_duration'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
-            'user': request.user.id
         }
 
         # if 'recipe_image' in request.data or recipe_instance.recipe_image:
@@ -147,8 +146,8 @@ class RecipeView(GenericViewSet):
 
         serializer = self.get_serializer(instance=recipe_instance, data=data, partial=True)
         if serializer.is_valid():
-            if request.user.id == recipe_instance.user.id:
-                serializer.save()
+            if request.user == recipe_instance.user:
+                serializer.save(user=request.user)
                 return Response({'data': serializer.data}, content_type='multipart/form-data',
                                 status=status.HTTP_200_OK)
             return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
