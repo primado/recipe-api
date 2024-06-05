@@ -9,7 +9,7 @@ router = DefaultRouter()
 
 
 urlpatterns = [
-    path('recipe',RecipeView.as_view({'get': 'list', 'post': 'create'})),
+    path('recipe', RecipeView.as_view({'get': 'list', 'post': 'create'})),
     path('public-recipe', RecipeView.as_view({'get': 'publicRecipe'})),
     path('recipe/<int:recipe_pk>', RecipeView.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
     path('feed/', RecipeFeedView.as_view({'get': 'list'}), name="feed"),
@@ -18,14 +18,21 @@ urlpatterns = [
     path('collection/<int:pk>/add-recipe', RecipeCollectionView.as_view({'post': 'add_recipe'}),
          name='add_recipe_collection'),
 
-    path('collection/<int:collection_pk>', RecipeCollectionView.as_view({'delete': 'destroy',  'put': 'update'}),
-         name="collection"),
+    path('collection/<int:collection_pk>', RecipeCollectionView.as_view({'delete': 'destroy',  'put': 'update',
+                                                                         'get': 'retrieve'}), name="collection"),
 
     # path('collection/<int:collection_pk>/<int:recipe_pk>',
     #      RecipeCollectionView.as_view({'delete': 'remove_recipe'}), name='remove-recipe-collection'),
 
     path('collection', RecipeCollectionView.as_view({'post': 'create_collection', 'get': 'list'}),
          name='create_collection'),
+    path('collection-recipes/<int:collection_pk>', ToggleBookMarkView.as_view({'get': 'collection_recipes'}),
+         name="get_collection_recipes"),
+
+    path('toggle-recipe/<int:collection_pk>', ToggleBookMarkView.as_view({'post': 'create', 'patch': 'update'}),
+         name='toggle-recipe'),
+
+    path('public-collections', ToggleBookMarkView.as_view({'get': 'list'}), name='list-public-collections'),
 
     path('recipe/<int:recipe_pk>/comment', CommentView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>/comment/<int:comment_pk>',

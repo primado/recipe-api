@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+
 from accounts.models import CustomUser
 
 
@@ -48,6 +50,13 @@ class RecipeCollection(models.Model):
     recipe = models.ManyToManyField(Recipe, through="RecipeCollectionRecipe", related_name='collections')
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
+    PRIVATE = "private"
+    PUBLIC = "public"
+    VISIBILITY_CHOICES = [
+        (PUBLIC, "Public"),
+        (PRIVATE, "Private")
+    ]
+    visibility = models.CharField(max_length=7, choices=VISIBILITY_CHOICES, default=PUBLIC)
 
     def __str__(self):
         return self.name
@@ -63,6 +72,13 @@ class RecipeCollection(models.Model):
 class RecipeCollectionRecipe(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     collection = models.ForeignKey(RecipeCollection, on_delete=models.CASCADE)
+    is_bookmarked = models.BooleanField(default=False)
+
+    def toggle_bookmarked(self):
+        self.is_bookmarked = not self.is_bookmarked
+        self.save()
+
+
 
 
 class Comment(models.Model):
