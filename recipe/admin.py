@@ -14,9 +14,10 @@ class RecipeAdmin(admin.ModelAdmin):
         return obj.description[:60] + "..."
     sht_description.short_description = 'Description'
 
+
 @admin.register(RecipeCollection)
 class RecipeCollection(admin.ModelAdmin):
-    list_display = ['id', 'name', 'user', 'sht_description', 'last_updated']
+    list_display = ['id', 'name', 'user', 'sht_description', 'visibility', 'last_updated']
     list_display_links = ['name', 'user']
 
     def sht_description(self, obj):
@@ -33,8 +34,6 @@ class RecipeCollectionRecipe(admin.ModelAdmin):
         return obj.recipe.user
 
     recipe_user.shor_description = 'Recipe User'
-
-
 
     def recipe_id(self, obj):
         return obj.recipe.id
