@@ -79,8 +79,6 @@ class RecipeCollectionRecipe(models.Model):
         self.save()
 
 
-
-
 class Comment(models.Model):
     text = models.TextField()
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
