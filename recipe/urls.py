@@ -29,6 +29,8 @@ urlpatterns = [
     path('collection-recipes/<int:collection_pk>', ToggleBookMarkView.as_view({'get': 'collection_recipes'}),
          name="get_collection_recipes"),
 
+    path('create-collection', ToggleBookMarkView.as_view({'post': 'create_collection'}), name="create_collection"),
+
     path('toggle-recipe/<int:collection_pk>', ToggleBookMarkView.as_view({'post': 'create', 'patch': 'update'}),
          name='toggle-recipe'),
 

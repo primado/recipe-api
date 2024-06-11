@@ -295,9 +295,10 @@ class RecipeCollectionView(ModelViewSet):
         data = {
             'name': request.data.get('name'),
             'description': request.data.get('description'),
+            'visibility': request.data.get('visibility')
             # 'user': request.user.id
         }
-        serializer = RecipeCollectionSerializer(data=data)
+        serializer = CreatCollectionSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -456,6 +457,24 @@ class ToggleBookMarkView(GenericViewSet):
 
         serializer = RecipeCollectionSerializer(collection, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=RecipeCollectionSerializer,
+        responses={201: CreatCollectionSerializer},
+        description='Create Collection new'
+    )
+    def create_collection(self, request, *args, **kwargs):
+        data = {
+            'name': request.data.get('name'),
+            'description': request.data.get('description'),
+            'visibility': request.data.get('visibility')
+            # 'user': request.user.id
+        }
+        serializer = CreatCollectionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         description='List all Public Recipes Collection',
