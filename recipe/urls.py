@@ -29,10 +29,14 @@ urlpatterns = [
     path('collection-recipes/<int:collection_pk>', ToggleBookMarkView.as_view({'get': 'collection_recipes'}),
          name="get_collection_recipes"),
 
-    path('create-collection', ToggleBookMarkView.as_view({'post': 'create_collection'}), name="create_collection"),
+    path('collections', ToggleBookMarkView.as_view({'post': 'create_collection'}),
+         name="create_collection"),
 
-    path('toggle-recipe/<int:collection_pk>', ToggleBookMarkView.as_view({'post': 'create', 'patch': 'update'}),
-         name='toggle-recipe'),
+    path('collections/<int:collection_pk>', ToggleBookMarkView.as_view({'get': 'retrieve_collection', 'patch': 'update_collection',
+                                                            'delete': 'delete_collection'}), name="create_collection"),
+
+    path('toggle-recipe/<int:collection_pk>', ToggleBookMarkView.as_view
+        ({'post': 'create', 'patch': 'update'}), name='toggle-recipe'),
 
     path('public-collections', ToggleBookMarkView.as_view({'get': 'list'}), name='list-public-collections'),
 

@@ -27,14 +27,16 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class CreatCollectionSerializer(serializers.ModelSerializer):
+    # user = serializers.StringRelatedField(read_only=True)
+    user = CustomUserSerializers(read_only=True)
 
     class Meta:
         model = RecipeCollection
-        fields = ['name', 'description', 'visibility']
+        fields = ['name', 'description', 'visibility', 'user']
 
 
 class RecipeCollectionSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user = CustomUserSerializers(read_only=True)
     recipes = RecipeCollectionRecipeSerializer(many=True, source='recipecollectionrecipe_set')
 
     class Meta:
