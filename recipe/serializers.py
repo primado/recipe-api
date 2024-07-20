@@ -7,12 +7,15 @@ from accounts.serializers import CustomUserSerializers
 
 class RecipeSerializer(serializers.ModelSerializer):
     user = CustomUserSerializers(read_only=True)
+    
     class Meta:
         model = Recipe
         fields = '__all__'
 
 
 class RecipeCollectionRecipeSerializer(serializers.ModelSerializer):
+    recipe = RecipeSerializer(read_only=True)
+
     class Meta:
         model = RecipeCollectionRecipe
         fields = ['recipe', 'collection', 'is_bookmarked']
@@ -27,7 +30,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class CreatCollectionSerializer(serializers.ModelSerializer):
-    # user = serializers.StringRelatedField(read_only=True)
     user = CustomUserSerializers(read_only=True)
 
     class Meta:
@@ -37,11 +39,11 @@ class CreatCollectionSerializer(serializers.ModelSerializer):
 
 class RecipeCollectionSerializer(serializers.ModelSerializer):
     user = CustomUserSerializers(read_only=True)
-    recipes = RecipeCollectionRecipeSerializer(many=True, source='recipecollectionrecipe_set')
+    collection_recipes = RecipeCollectionRecipeSerializer(many=True, source='recipecollectionrecipe_set')
 
     class Meta:
         model = RecipeCollection
-        fields = ['id', 'name', 'description', 'user', 'visibility', 'recipes', 'created_at', 'last_updated']
+        fields = ['id', 'name', 'description', 'user', 'visibility', 'collection_recipes', 'created_at', 'last_updated']
 
     def create(self, validated_data):
         recipes_data = validated_data.pop('recipecollectionrecipe_set')
@@ -62,6 +64,14 @@ class RecipeCollectionSerializer(serializers.ModelSerializer):
             recipe_instance.save()
 
         return instance
+
+
+# class RetrieveCollectionsRecipesSerializer(serializers.ModelSerializer):
+#     user = CustomUserSerializers(read_only=True)
+#     class Meta:
+#         class Meta:
+#             model =
+#             fields = '__all__'
 
 
 class CommentSerializer(serializers.ModelSerializer):

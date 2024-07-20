@@ -535,6 +535,7 @@ class ToggleBookMarkView(GenericViewSet):
         except RecipeCollection.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
+
     @extend_schema(
         description='Toggle to add Recipe to Collection',
         request=RecipeCollectionRecipeSerializer,
@@ -631,6 +632,25 @@ class ToggleBookMarkView(GenericViewSet):
             recipe_collection_recipe.delete()
             return Response({"detail": "Recipe removed from collection"}, status=status.HTTP_200_OK)
 
+@extend_schema(
+    tags=['Recipe Collection Recipes'],
+    description='List Recipes in a Collections'
+)
+class CollectionRecipes(GenericViewSet):
+    queryset = RecipeCollectionRecipe.objects.all()
+    serializer_class = RecipeCollectionRecipeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def collection_recipes(self, request, *args, **kwargs):
+        collection_pk = self.kwargs['collection_pk']
+        try:
+            collection = RecipeCollection.objects.get(pk=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({'detail': 'Recipe collection does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        folder = RecipeCollection.objects.filter(pk=collection_pk)
+        serailizer = RecipeCollectionRecipeSerializer(folder, many=True)
+        return Response(serailizer.data, status=status.HTTP_200_OK)
 
 # Comment View
 @extend_schema(

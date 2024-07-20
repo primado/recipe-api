@@ -74,10 +74,6 @@ class UserProfileUpdateView(GenericViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-        
-
-
 class DeleteAccount(ModelViewSet):
     queryset = CustomUser.objects.all()
     lookup_field = 'username'
@@ -109,12 +105,10 @@ class ProfilePictureView(GenericViewSet):
     serializer_class = ProfilePictureSerializer
     permission_classes = [IsAuthenticated]
 
-
     def list(self, request, *args, **kwargs):
         queryset = self.queryset.filter(id=request.user.id)
         serializer = ProfilePictureSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
     # def create(self, request, *args, **kwargs):
     #     picture_data = {
