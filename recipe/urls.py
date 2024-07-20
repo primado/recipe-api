@@ -32,8 +32,8 @@ urlpatterns = [
     path('collections', ToggleBookMarkView.as_view({'post': 'create_collection'}),
          name="create_collection"),
 
-    path('collections/<int:collection_pk>', ToggleBookMarkView.as_view({'get': 'retrieve_collection', 'patch': 'update_collection',
-                                                            'delete': 'delete_collection'}), name="create_collection"),
+    path('collections/<int:collection_pk>', ToggleBookMarkView.as_view({'get': 'retrieve_collection',
+                            'patch': 'update_collection', 'delete': 'delete_collection'}), name="create_collection"),
 
     path('toggle-recipe/<int:collection_pk>', ToggleBookMarkView.as_view
         ({'post': 'create', 'patch': 'update'}), name='toggle-recipe'),
@@ -42,7 +42,8 @@ urlpatterns = [
 
     # Recipe Collection Recipe View URLS
 
-    path('recipe-collection-recipes/<int:collecion_pk>', CollectionRecipes.as_view({'get': 'collection_recipes'}), name="get_collection_recipes"),
+    path('recipe-collection-recipes/<int:collecion_pk>', CollectionRecipes.as_view({'get': 'collection_recipes'}),
+         name="get_collection_recipes"),
 
     path('recipe/<int:recipe_pk>/comment', CommentView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>/comment/<int:comment_pk>',
@@ -59,9 +60,6 @@ urlpatterns = [
                                                                                              'delete': 'destroy'})),
 
     path('check-usernmae/<str:username>', CheckUserName.as_view({'get': 'retrieve'}), name='check-username')
-
-
-
 
 ]
 
