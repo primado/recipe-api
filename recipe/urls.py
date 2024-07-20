@@ -40,6 +40,10 @@ urlpatterns = [
 
     path('public-collections', ToggleBookMarkView.as_view({'get': 'list'}), name='list-public-collections'),
 
+    # Recipe Collection Recipe View URLS
+
+    path('recipe-collection-recipes/<int:collecion_pk>', CollectionRecipes.as_view({'get': 'collection_recipes'}), name="get_collection_recipes"),
+
     path('recipe/<int:recipe_pk>/comment', CommentView.as_view({'get': 'list', 'post': 'create'})),
     path('recipe/<int:recipe_pk>/comment/<int:comment_pk>',
          CommentView.as_view({'put': 'update', 'delete': 'destroy'})),
