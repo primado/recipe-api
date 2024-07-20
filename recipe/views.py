@@ -238,8 +238,6 @@ class UserPrivateRecipes(GenericViewSet):
         return Response({'data': serializer.data}, status=status.HTTP_200_OK)
 
 
-
-
 @extend_schema(
     tags=['Recipe Collection']
 )
