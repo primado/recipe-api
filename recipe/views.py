@@ -138,7 +138,6 @@ class RecipeView(GenericViewSet):
             'cooking_time_duration': request.data.get('cooking_time_duration'),
             'visibility': request.data.get('visibility'),
             'difficulty_level': request.data.get('difficulty_level'),
-            'user': request.user.id
         }
 
         # if 'recipe_image' in request.data or recipe_instance.recipe_image:
@@ -147,8 +146,8 @@ class RecipeView(GenericViewSet):
 
         serializer = self.get_serializer(instance=recipe_instance, data=data, partial=True)
         if serializer.is_valid():
-            if request.user.id == recipe_instance.user.id:
-                serializer.save()
+            if request.user == recipe_instance.user:
+                serializer.save(user=request.user)
                 return Response({'data': serializer.data}, content_type='multipart/form-data',
                                 status=status.HTTP_200_OK)
             return Response({'message': 'User forbidden'}, status=status.HTTP_403_FORBIDDEN)
@@ -262,7 +261,7 @@ class RecipeCollectionView(ModelViewSet):
             return Response({'message': 'Recipe collection empty.'}, status=status.HTTP_204_NO_CONTENT)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response({'data': serializer.data}, content_type='application/json',
+        return Response(serializer.data, content_type='application/json',
                         status=status.HTTP_200_OK)
 
     # @extend_schema(
@@ -296,9 +295,10 @@ class RecipeCollectionView(ModelViewSet):
         data = {
             'name': request.data.get('name'),
             'description': request.data.get('description'),
+            'visibility': request.data.get('visibility')
             # 'user': request.user.id
         }
-        serializer = RecipeCollectionSerializer(data=data)
+        serializer = CreatCollectionSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -330,6 +330,32 @@ class RecipeCollectionView(ModelViewSet):
 
     @extend_schema(
         request=RecipeCollectionSerializer,
+        responses={200: RecipeCollectionSerializer},
+        description='Get a recipe collection'
+    )
+    # Retrieve Collection
+    def retrieve(self, request, *args, **kwargs):
+        collection_pk = self.kwargs['collection_pk']
+        try:
+            collection_instance = RecipeCollection.objects.get(id=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({"message": "Recipe Collection does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = RecipeCollectionSerializer(instance=collection_instance)
+        serializer_data = [serializer.data]
+        if request.user == collection_instance.user:
+            return Response(serializer_data, status=status.HTTP_200_OK)
+        elif request.user != collection_instance.user and collection_instance.visibility == "private":
+            return Response({"message": "You do not have permission to view this collections"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+        elif collection_instance.visibility == "public":
+            return Response(serializer_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @extend_schema(
+        request=RecipeCollectionSerializer,
+        responses={204: RecipeCollectionSerializer},
         description='Delete Collection',
     )
     def destroy(self, request, collection_pk, *args, **kwargs):
@@ -409,6 +435,222 @@ class RecipeCollectionView(ModelViewSet):
         return Response({'message': 'Recipe removed from collection successfully'},
                         status=status.HTTP_204_NO_CONTENT)
 
+@extend_schema(
+    tags=['Toggle Bookmark Recipe Collection'],
+    description='Toggle to Recipe to Collection'
+)
+class ToggleBookMarkView(GenericViewSet):
+    queryset = RecipeCollection
+    serializer_class = RecipeCollectionSerializer
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        description='List all Recipes in the collection',
+        request=RecipeCollectionSerializer,
+    )
+    def collection_recipes(self, request, *args, **kwargs):
+        collection_pk = self.kwargs.get('collection_pk')
+        try:
+            collection = RecipeCollection.objects.filter(pk=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({"detail": "Collection does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = RecipeCollectionSerializer(collection, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=CreatCollectionSerializer,
+        responses={201: CreatCollectionSerializer},
+        description='Create Collection new'
+    )
+    def create_collection(self, request, *args, **kwargs):
+        data = {
+            'name': request.data.get('name'),
+            'description': request.data.get('description'),
+            'visibility': request.data.get('visibility')
+            # 'user': request.user.id
+        }
+        serializer = CreatCollectionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @extend_schema(
+        request=CreatCollectionSerializer,
+        responses={200: CreatCollectionSerializer},
+        description='Update the fields of a Collections'
+    )
+    def update_collection(self, request, *args, **kwargs):
+        collection_pk = self.kwargs.get('collection_pk')
+        try:
+            collection = RecipeCollection.objects.get(pk=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({'detail': 'Collection does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = {
+            'name': request.data.get('name'),
+            'description': request.data.get('description'),
+            'visibility': request.data.get('visibility')
+        }
+        serializer = CreatCollectionSerializer(data=data, instance=collection)
+        if serializer.is_valid():
+            if request.user.id != collection.user.id:
+                return Response({'detail': 'You do not have permission to edit this collection'},
+                                status=status.HTTP_403_FORBIDDEN)
+            else:
+                serializer.save(user=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        request=CreatCollectionSerializer,
+        responses={200: CreatCollectionSerializer},
+        description='Retrieve the fields of a Collection'
+    )
+    def retrieve_collection(self, request, *args, **kwargs):
+        collection_pk = self.kwargs['collection_pk']
+        try:
+            collection_instance = RecipeCollection.objects.get(id=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({"message": "Recipe Collection does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = RecipeCollectionSerializer(instance=collection_instance)
+        serializer_data = serializer.data
+        if collection_instance.visibility == "public":
+            return Response(serializer_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @extend_schema(
+        description='List all Public Recipes Collection',
+        request=RecipeCollectionSerializer,
+    )
+    def list(self, request, *args, **kwargs):
+        try:
+            collection = RecipeCollection.objects.filter(visibility="public")
+            serializer = RecipeCollectionSerializer(collection, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except RecipeCollection.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+    @extend_schema(
+        description='Toggle to add Recipe to Collection',
+        request=RecipeCollectionRecipeSerializer,
+        responses={200: RecipeCollectionRecipeSerializer}
+    )
+    def create(self, request, *args, **kwargs):
+        collection_pk = self.kwargs.get('collection_pk')
+        try:
+            collection = RecipeCollection.objects.get(pk=collection_pk)
+            recipe_pk = request.data.get('recipe_id')
+            is_bookmarked = request.data.get('is_bookmarked')
+
+            if recipe_pk is None:
+                return Response({"detail": "Recipe ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                recipe = Recipe.objects.get(pk=recipe_pk)
+            except Recipe.DoesNotExist:
+                return Response({"detail": "Recipe does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+            try:
+                recipe_collection_recipe = RecipeCollectionRecipe.objects.get(collection=collection, recipe=recipe)
+                recipe_collection_recipe.is_bookmarked = is_bookmarked
+                recipe_collection_recipe.save()
+            except RecipeCollectionRecipe.DoesNotExist:
+                recipe_collection_recipe = RecipeCollectionRecipe.objects.create(
+                    collection=collection,
+                    recipe=recipe,
+                    is_bookmarked=is_bookmarked
+                )
+            serializer = RecipeCollectionRecipeSerializer(recipe_collection_recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except RecipeCollection.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    @extend_schema(
+        description='Toggle Update Collection to remove or add Recipe in Collection',
+        request=RecipeCollectionRecipeSerializer,
+    )
+    def update(self, request, *args, **kwargs):
+        collection_pk = self.kwargs.get('collection_pk')
+        try:
+            collection = RecipeCollection.objects.get(pk=collection_pk)
+            recipe_pk = request.data.get('recipe_id')
+            is_bookmarked = request.data.get('is_bookmarked')
+
+            if recipe_pk is None:
+                return Response({"detail": "Recipe ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                recipe = Recipe.objects.get(pk=recipe_pk)
+            except Recipe.DoesNotExist:
+                return Response({"detail": "Recipe does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+            try:
+                recipe_collection_recipe = RecipeCollectionRecipe.objects.get(collection=collection, recipe=recipe)
+                return self.update_recipe_collection_recipe(recipe_collection_recipe, is_bookmarked)
+            except RecipeCollectionRecipe.DoesNotExist:
+                if is_bookmarked:
+                    recipe_collection_recipe = RecipeCollectionRecipe.objects.create(
+                        collection=collection,
+                        recipe=recipe,
+                        is_bookmarked=is_bookmarked
+                    )
+                    serializer = RecipeCollectionRecipeSerializer(recipe_collection_recipe)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"detail": "Recipe is not bookmarked and does not exist in the collection"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+        except RecipeCollection.DoesNotExist:
+            return Response({"detail": "Recipe collection does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+    @extend_schema(
+        description='Delete Collection',
+        responses={204:  RecipeCollectionSerializer}
+    )
+    def delete_collection(self, request, *args, **kwargs):
+        collection_pk = self.kwargs.get('collection_pk')
+        try:
+            collection_instance = RecipeCollection.objects.get(pk=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({'detail': 'Recipe collection does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        collection_instance.delete()
+        return Response({'detail': 'Recipe collection deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+    def update_recipe_collection_recipe(self, recipe_collection_recipe, is_bookmarked):
+        if is_bookmarked:
+            recipe_collection_recipe.is_bookmarked = is_bookmarked
+            recipe_collection_recipe.save()
+            serializer = RecipeCollectionRecipeSerializer(recipe_collection_recipe)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            recipe_collection_recipe.delete()
+            return Response({"detail": "Recipe removed from collection"}, status=status.HTTP_200_OK)
+
+@extend_schema(
+    tags=['Recipe Collection Recipes'],
+    description='List Recipes in a Collections'
+)
+class CollectionRecipes(GenericViewSet):
+    queryset = RecipeCollectionRecipe.objects.all()
+    serializer_class = RecipeCollectionRecipeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def collection_recipes(self, request, *args, **kwargs):
+        collection_pk = self.kwargs['collection_pk']
+        try:
+            collection = RecipeCollection.objects.get(pk=collection_pk)
+        except RecipeCollection.DoesNotExist:
+            return Response({'detail': 'Recipe collection does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        folder = RecipeCollection.objects.filter(pk=collection_pk)
+        serailizer = RecipeCollectionRecipeSerializer(folder, many=True)
+        return Response(serailizer.data, status=status.HTTP_200_OK)
 
 # Comment View
 @extend_schema(
